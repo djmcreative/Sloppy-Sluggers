@@ -441,3 +441,91 @@ body {
   font-size: 15px;
   cursor: pointer;
 }
+
+/* ---------- stamina ---------- */
+
+#stamina-block {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+#stamina-label {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: #9a9aa6;
+}
+
+#stamina-bar {
+  display: inline-block;
+  width: 120px;
+  height: 12px;
+  background: #33333b;
+  border: 1px solid #55555f;
+}
+
+#stamina-fill {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: #6fbf5a;
+}
+
+/* the bar changes colour as you wear down */
+.tier-working #stamina-fill { background: #c9c04a; }
+.tier-tired   #stamina-fill { background: #d98a2a; }
+.tier-gassed  #stamina-fill { background: #d03a2f; }
+
+.tier-tired  #stamina-label,
+.tier-gassed #stamina-label { color: #ff8072; }
+
+/* ---------- between innings ---------- */
+
+#between {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 15, 18, 0.95);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+}
+
+#between.hidden {
+  display: none;
+}
+
+#between h1 {
+  font-size: 30px;
+  letter-spacing: 3px;
+  color: #f2c230;
+}
+
+#between p {
+  color: #b8b4aa;
+  max-width: 420px;
+  line-height: 1.6;
+}
+
+#between b {
+  color: #e8e4da;
+}
+
+.rest-note {
+  color: #8fd67a !important;
+}
+
+#next-inning {
+  background: #c9a94a;
+  color: #26262c;
+  border: 2px solid #8a7228;
+  padding: 12px 28px;
+  font-family: inherit;
+  font-weight: bold;
+  font-size: 15px;
+  cursor: pointer;
+  margin-top: 6px;
+}

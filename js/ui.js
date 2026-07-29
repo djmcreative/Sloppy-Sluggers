@@ -28,7 +28,7 @@ var UI = {
       "<p>" + character.blurb + "</p>";
 
     element.addEventListener("click", function () {
-      startGame(id);
+      startRun(id);
     });
 
     return element;
@@ -48,6 +48,10 @@ var UI = {
     document.getElementById("batter-name").textContent = CHARACTERS[s.character].name.toUpperCase();
     document.getElementById("pitcher-name").textContent = PITCHER.name.toUpperCase();
 
+    document.getElementById("inning").textContent = Run.state.inning;
+    document.getElementById("total-innings").textContent = TOTAL_INNINGS;
+    this.renderStamina();
+
     document.getElementById("runs").textContent = s.runs;
     document.getElementById("target").textContent = s.target;
     document.getElementById("turn").textContent = s.turn;
@@ -63,6 +67,18 @@ var UI = {
     document.getElementById("discard-count").textContent = s.discardPile.length;
 
     this.renderHand();
+  },
+
+  renderStamina: function () {
+    var stamina = Run.state.stamina;
+    var tier = Run.tier();
+
+    document.getElementById("stamina-number").textContent = stamina;
+    document.getElementById("stamina-label").textContent = tier.label.toUpperCase();
+    document.getElementById("stamina-fill").style.width = (stamina / STAMINA.start * 100) + "%";
+
+    var block = document.getElementById("stamina-block");
+    block.className = "stat tier-" + tier.label.toLowerCase();
   },
 
   renderIntent: function () {
@@ -183,20 +199,46 @@ var UI = {
 
   // ---------- result ----------
 
-  showResult: function (won) {
-    var s = Game.state;
-
-    document.getElementById("result-title").textContent = won ? "INNING WON" : "SIDE RETIRED";
-    document.getElementById("result-text").textContent = won
-      ? "You put up " + s.runs + " runs in " + s.turn + " turns."
-      : "Three outs. You scored " + s.runs + " of the " + s.target + " you needed.";
-
-    document.getElementById("result").classList.remove("hidden");
+  // called at the end of every inning - either move on or end the run
+  showInningResult: function (won) {
     document.getElementById("end-turn").disabled = true;
+
+    if (Run.state.over) {
+      this.showRunResult();
+      return;
+    }
+
+    var s = Game.state;
+    var spent = STAMINA.perTurn * s.turn + STAMINA.perOut * s.outs;
+
+    document.getElementById("between-title").textContent = "INNING " + (Run.state.inning - 1) + " WON";
+    document.getElementById("between-text").textContent =
+      s.runs + " runs in " + s.turn + " turns. That inning cost you about " + spent + " stamina.";
+
+    var note = "";
+    if (Run.isOffDay() === false && OFF_DAY_AFTER.indexOf(Run.state.inning - 1) !== -1) {
+      note = "<p class='rest-note'>Off day. You get " + STAMINA.offDayRest + " stamina back.</p>";
+    }
+    document.getElementById("between-stamina").innerHTML =
+      note + "<p>Stamina: <b>" + Run.state.stamina + "</b> (" + Run.tier().label + ")</p>";
+
+    document.getElementById("between").classList.remove("hidden");
   },
 
-  hideResult: function () {
+  showRunResult: function () {
+    var r = Run.state;
+
+    document.getElementById("result-title").textContent = r.won ? "ACT CLEARED" : "SIDE RETIRED";
+    document.getElementById("result-text").textContent = r.won
+      ? "You got through all " + TOTAL_INNINGS + " innings with " + r.stamina + " stamina left."
+      : "Three outs in inning " + r.inning + ". The run is over.";
+
+    document.getElementById("result").classList.remove("hidden");
+  },
+
+  hideOverlays: function () {
     document.getElementById("result").classList.add("hidden");
+    document.getElementById("between").classList.add("hidden");
     document.getElementById("end-turn").disabled = false;
   }
 

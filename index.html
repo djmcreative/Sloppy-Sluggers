@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sloppy Sluggers</title>
-<link rel="stylesheet" href="css/style.css?v=2">
+<link rel="stylesheet" href="css/style.css?v=3">
 </head>
 <body>
 
@@ -13,8 +13,14 @@
   <!-- top bar -->
   <header id="topbar">
     <span class="stat" id="who">--</span>
+    <span class="stat">INNING <b id="inning">1</b> / <b id="total-innings">9</b></span>
     <span class="stat">RUNS <b id="runs">0</b> / <b id="target">6</b></span>
     <span class="stat">TURN <b id="turn">1</b></span>
+    <span class="stat" id="stamina-block" title="Stamina. Turns and outs wear you down. Low stamina means less energy and a smaller hand.">
+      <span id="stamina-label">FRESH</span>
+      <span id="stamina-bar"><span id="stamina-fill"></span></span>
+      <b id="stamina-number">100</b>
+    </span>
   </header>
 
   <!-- the field: batter on the left, pitcher on the right -->
@@ -96,7 +102,15 @@
     <div id="character-list"></div>
   </div>
 
-  <!-- shown when the game ends -->
+  <!-- shown between innings -->
+  <div id="between" class="hidden">
+    <h1 id="between-title"></h1>
+    <p id="between-text"></p>
+    <div id="between-stamina"></div>
+    <button id="next-inning">Next Inning</button>
+  </div>
+
+  <!-- shown when the run ends -->
   <div id="result" class="hidden">
     <h1 id="result-title"></h1>
     <p id="result-text"></p>
@@ -105,10 +119,11 @@
 
 </div>
 
-<script src="js/cards.js?v=2"></script>
-<script src="js/pitcher.js?v=2"></script>
-<script src="js/game.js?v=2"></script>
-<script src="js/ui.js?v=2"></script>
-<script src="js/main.js?v=2"></script>
+<script src="js/cards.js?v=3"></script>
+<script src="js/run.js?v=3"></script>
+<script src="js/pitcher.js?v=3"></script>
+<script src="js/game.js?v=3"></script>
+<script src="js/ui.js?v=3"></script>
+<script src="js/main.js?v=3"></script>
 </body>
 </html>

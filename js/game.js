@@ -14,19 +14,19 @@ var Game = {
   // ---------- setup ----------
 
   start: function (characterId) {
-    var character = CHARACTERS[characterId];
+    var tier = Run.tier();
 
     this.state = {
       character: characterId,
 
-      drawPile: shuffle(character.deck.slice()),
+      drawPile: shuffle(Run.state.deck.slice()),
       hand: [],
       discardPile: [],
       exhausted: [],
 
-      energy: 3,
-      maxEnergy: 3,
-      handSize: 5,
+      energy: tier.energy,
+      maxEnergy: tier.energy,
+      handSize: tier.handSize,
 
       balls: 0,
       strikes: 0,
@@ -54,6 +54,13 @@ var Game = {
 
   startTurn: function () {
     var s = this.state;
+
+    // every turn in an inning wears you down
+    Run.spend(STAMINA.perTurn);
+
+    var tier = Run.tier();
+    s.maxEnergy = tier.energy;
+    s.handSize = tier.handSize;
 
     s.energy = s.maxEnergy;
     s.foul = 0;
@@ -244,6 +251,7 @@ var Game = {
     s.outs++;
     s.strikes = 0;
     s.balls = 0;
+    Run.spend(STAMINA.perOut);
     UI.log("That's an out.");
 
     if (s.outs >= 3) {
@@ -305,6 +313,7 @@ var Game = {
     if (pitch.addsJunk) {
       var spot = Math.floor(Math.random() * (s.drawPile.length + 1));
       s.drawPile.splice(spot, 0, "junk");
+      Run.addCardToDeck("junk");   // it stays in the deck for the whole run
       UI.log("Junk in your draw pile.");
     }
 
@@ -370,7 +379,9 @@ var Game = {
   endGame: function (won) {
     this.state.over = true;
     this.state.won = won;
-    UI.showResult(won);
+
+    Run.finishInning(won);
+    UI.showInningResult(won);
   }
 
 };
