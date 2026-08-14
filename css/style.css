@@ -1,0 +1,828 @@
+/* Sloppy Sluggers.
+   Everything here is built on the pixel art in assets/. Two rules that
+   matter and keep getting broken by accident:
+
+   1. Anything showing a sprite needs image-rendering: pixelated, or the
+      browser smears it into mush the moment it scales.
+   2. Field art is sized in PERCENTAGES of #stage, never px. That is what
+      keeps the sprites and the 480x270 backdrop upscaling by the same
+      factor at every window size. UI chrome (cards, orbs) is the
+      opposite - fixed px at exactly 2x native, so it stays crisp.
+*/
+
+:root {
+  --ink:      #17171b;
+  --navy:     #0d192c;
+  --navy-lt:  #22274a;
+  --clay:     #723f37;
+  --clay-lt:  #97564b;
+  --cream:    #d9cdae;
+  --bone:     #ccd3db;
+  --grey:     #5f6872;
+  --light:    #fffaa8;   /* stadium lights - the only bright accent */
+  --gold:     #ffcf7b;
+  --grass:    #1c6e3d;
+
+  /* scorecard typewriter for anything that is data */
+  --face-data: "Courier New", Courier, monospace;
+  --face-ui:   Verdana, Geneva, sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--navy);
+  color: var(--bone);
+  font-family: var(--face-ui);
+  height: 100vh;
+  overflow: hidden;
+}
+
+#game {
+  position: relative;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.hidden { display: none; }
+/* light versions, for use on the dark field and overlays */
+.good { color: #8fd67a; }
+.bad  { color: #ff8072; }
+
+/* On the cream card body those two measure 1.1:1 and 1.6:1 - basically
+   invisible. These darker mixes of the same hues hit ~5.7:1. */
+.card-body .good, .card-name .good { color: #17542b; }
+.card-body .bad,  .card-name .bad  { color: #8f1c14; }
+
+/* one shared pixel-art rule */
+.sprite,
+.pixel {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* ---------- table: play surface + info column ---------- */
+
+#field {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  min-height: 0;
+  background: #060a12;
+}
+
+#stage {
+  position: relative;
+  width: min(100%, calc(100vh * 16 / 9));
+  aspect-ratio: 16 / 9;
+  max-height: 100%;
+  container-type: size;   /* lets children use cqh = 1% of stage height */
+  background: url("../assets/bg_field.png?v=13") center / 100% 100% no-repeat;
+  image-rendering: pixelated;
+}
+
+/* lights up while a card is being dragged over it */
+#stage.armed {
+  box-shadow: inset 0 0 0 3px var(--light), inset 0 0 60px rgba(255, 250, 168, 0.18);
+}
+
+/* Both figures are pinned to landmarks in the backdrop. Percentages, so
+   they stay on their spots at any window size. */
+.side {
+  position: absolute;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 30%;
+}
+
+/* left base path. Sitting higher up the line means sitting further along
+   it, so he shifts left as he rises to stay on the dirt. */
+#batter-side  { left: 20%; bottom: 38%; }
+
+/* the mound dirt runs 53%-65% down, so his feet stay inside it */
+#pitcher-side { left: 78%; bottom: 42%; }
+
+/* 95px tall on a 270px backdrop is ~35% of stage height - percentages
+   are what hold the pixel density even between sprites and background */
+/* cqh is 1% of stage height. Sized this way the sprite pixels and the
+   backdrop pixels upscale by the same factor at any window size - that is
+   the density fix, do not convert these to px or vh. */
+#batter-sprite  { height: 27cqh; width: auto; }
+#pitcher-sprite { height: 25cqh; width: auto; }
+
+.fighter { display: flex; justify-content: center; align-items: flex-end; }
+
+/* name and status sit above the head now - below would put them under
+   the hand */
+.side .nameplate { margin: 0 0 4px; }
+.side .chips { margin: 0 0 4px; }
+
+.nameplate {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 10px;
+  font-family: var(--face-data);
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: var(--cream);
+  background: rgba(6, 10, 18, 0.8);
+  border: 1px solid var(--grey);
+}
+
+.chips { margin-top: 6px; min-height: 20px; }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--grey);
+  background: rgba(6, 10, 18, 0.85);
+  padding: 2px 7px;
+  margin: 2px;
+  font-family: var(--face-data);
+  font-size: 10px;
+  color: var(--cream);
+}
+
+.chip .sprite { width: 14px; height: 14px; object-fit: contain; }
+
+/* ---------- what he's about to throw ---------- */
+
+#intent {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 2px solid #a33a30;
+  background: rgba(6, 10, 18, 0.9);
+  padding: 5px 12px;
+  margin-bottom: 12px;
+  font-family: var(--face-data);
+  font-size: 13px;
+  cursor: help;
+}
+
+#intent-icon { width: 26px; height: 26px; object-fit: contain; }
+
+#intent-strikes {
+  color: #ff7a6a;
+  font-weight: bold;
+  margin-left: 4px;
+}
+
+/* ---------- the hand, sitting on the grass ---------- */
+
+#handbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 32%;
+  min-height: 214px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 20px 10px;
+  /* the grass darkens toward the bottom so the cards have something to
+     sit against without drawing an actual bar */
+  background: linear-gradient(to top, rgba(6, 10, 18, 0.72) 20%, rgba(6, 10, 18, 0) 100%);
+}
+
+/* chalk foul line the hand rests along */
+#handbar::before {
+  content: "";
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  top: 8px;
+  height: 6px;
+  background: url("../assets/chalk_line.png?v=13") repeat-x center / auto 6px;
+  image-rendering: pixelated;
+  opacity: 0.5;
+}
+
+#energy {
+  flex: none;
+  width: 96px;
+  height: 96px;
+  background: url("../assets/energy_ball.png?v=13") no-repeat center / 96px 96px;
+  image-rendering: pixelated;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--face-data);
+  font-weight: bold;
+  color: var(--ink);
+}
+
+#energy b { font-size: 34px; line-height: 1; }
+#energy #energy-max-wrap { font-size: 17px; opacity: 0.75; }
+
+#hand {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  height: 100%;
+  padding-bottom: 6px;
+}
+
+#hand-right {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+#piles { display: flex; gap: 8px; }
+
+.pile {
+  width: 68px;
+  height: 92px;
+  background: url("../assets/card_back.png?v=13") no-repeat center / 68px 92px;
+  image-rendering: pixelated;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 6px;
+  font-family: var(--face-data);
+}
+
+.pile-n {
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--light);
+  text-shadow: 1px 1px 0 #000;
+}
+
+.pile small {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--bone);
+  text-shadow: 1px 1px 0 #000;
+}
+
+/* ---------- cards ---------- */
+/* 70x95 art shown at exactly 2x. Don't use odd sizes here - the frame
+   only stays sharp on whole-number multiples, so if these need to grow
+   again, redraw the art in mkui.py rather than scaling by 1.5. */
+
+.card {
+  --i: 0;
+  --mid: 0;
+  position: relative;
+  width: 140px;
+  height: 190px;
+  flex: none;
+  margin: 0 -16px;              /* slight overlap, like a real hand */
+  background: url("../assets/card_frame.png?v=13") no-repeat center / 140px 190px;
+  image-rendering: pixelated;
+  color: var(--ink);
+  cursor: grab;
+  touch-action: none;           /* or a touch drag turns into a page scroll */
+  transform-origin: bottom center;
+  transition: transform 0.16s ease-out, filter 0.16s ease-out;
+  will-change: transform;
+  /* fan: each card leans away from the middle of the hand.
+     --i is its slot and --mid the centre slot, both set in ui.js */
+  transform: rotate(calc((var(--i) - var(--mid)) * 4deg))
+             translateY(calc(max(var(--i) - var(--mid), var(--mid) - var(--i)) * 5px));
+}
+
+.card:hover,
+.card:focus-visible {
+  transform: translateY(-26px) scale(1.06) rotate(0deg);
+  background-image: url("../assets/card_frame_hot.png?v=13");
+  z-index: 5;
+  outline: none;
+}
+
+.card.unplayable {
+  filter: grayscale(0.7) brightness(0.7);
+  cursor: not-allowed;
+}
+
+.card.unplayable:hover {
+  transform: rotate(calc((var(--i) - var(--mid)) * 4deg));
+  background-image: url("../assets/card_frame.png?v=13");
+}
+
+/* while dragging, the card is pinned to the cursor by ui.js */
+.card.dragging {
+  position: fixed;
+  z-index: 60;
+  margin: 0;
+  transition: none;
+  pointer-events: none;
+  transform: rotate(-3deg) scale(1.08);
+  background-image: url("../assets/card_frame_hot.png?v=13");
+  filter: drop-shadow(0 12px 10px rgba(0, 0, 0, 0.55));
+}
+
+/* gap left in the fan where the dragged card was */
+.card.ghost { opacity: 0.25; filter: grayscale(1); }
+
+/* corner badge - sits mostly outside the card so it covers as little of
+   the name band as possible */
+.card-cost {
+  position: absolute;
+  z-index: 2;
+  top: -12px;
+  left: -12px;
+  width: 40px;
+  height: 40px;
+  background: url("../assets/cost_ball.png?v=13") no-repeat center / 40px 40px;
+  image-rendering: pixelated;
+  text-align: center;
+  line-height: 40px;
+  font-family: var(--face-data);
+  font-weight: bold;
+  font-size: 17px;
+  color: var(--ink);
+}
+
+/* The name band in card_frame.png runs from y6 to y33 on screen, with the
+   black rule at y34. These numbers come straight off the art - if the card
+   is ever resized, re-measure rather than nudging by eye. */
+/* Inset equally on BOTH sides: the left inset clears the cost ball (which
+   spans x -12 to 28), and matching it on the right keeps the name centred
+   on the true middle of the card instead of shunted right. Every card name
+   still fits two lines in the 80px that leaves. */
+.card-name {
+  position: absolute;
+  top: 6px;
+  left: 30px;
+  right: 30px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.1;
+  font-weight: bold;
+  letter-spacing: 0.3px;
+  color: var(--cream);
+  text-shadow: 1px 1px 0 #000;
+}
+
+/* Body sits below the rule, inside the cream panel.
+   The flex box only ever centres ONE child - .card-body. Putting the text
+   straight into a flex container makes every inline piece its own flex
+   item, which forces it onto a single line and eats the spaces between
+   them. Keep the inner wrapper. */
+.card-text {
+  position: absolute;
+  top: 42px;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-body {
+  display: block;
+  width: 100%;
+  font-family: var(--face-data);
+  font-size: 12.5px;
+  line-height: 1.4;
+  font-weight: bold;
+  text-align: center;
+  color: var(--ink);
+  overflow-wrap: break-word;
+}
+
+/* deal-in animation, staggered by slot */
+@keyframes deal {
+  from { opacity: 0; transform: translate(90px, 60px) rotate(14deg) scale(0.8); }
+}
+
+.card.dealt {
+  animation: deal 0.26s ease-out backwards;
+  animation-delay: calc(var(--i) * 0.045s);
+}
+
+/* the flash where a played card lands */
+#contact {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: 120px;
+  height: 120px;
+  margin: -60px 0 0 -60px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 250, 168, 0.85) 0%, rgba(255, 250, 168, 0) 70%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+@keyframes contact-pop {
+  0%   { opacity: 0;   transform: scale(0.4); }
+  35%  { opacity: 0.9; transform: scale(1.05); }
+  100% { opacity: 0;   transform: scale(1.4); }
+}
+
+#contact.pop { animation: contact-pop 0.36s ease-out; }
+
+#drop-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 46%;
+  text-align: center;
+  font-family: var(--face-data);
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: var(--light);
+  text-shadow: 1px 1px 0 #000;
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+}
+
+#stage.armed #drop-hint { opacity: 0.85; }
+
+#end-turn {
+  border: 0;
+  padding: 14px 26px;
+  background: url("../assets/btn.png?v=13") no-repeat center / 100% 100%;
+  image-rendering: pixelated;
+  font-family: var(--face-data);
+  font-weight: bold;
+  font-size: 16px;
+  letter-spacing: 1px;
+  color: var(--cream);
+  text-shadow: 1px 1px 0 #000;
+  cursor: pointer;
+}
+
+#end-turn:hover:not(:disabled) {
+  background-image: url("../assets/btn_hot.png?v=13");
+  color: var(--ink);
+  text-shadow: none;
+}
+
+#end-turn:disabled { filter: grayscale(1) brightness(0.6); cursor: default; }
+
+/* ---------- logo ---------- */
+/* 290x30 native. Both placements are whole-number multiples so the pixels
+   stay square: 1x in game, 2x on the title screen. */
+
+#game-logo {
+  position: absolute;
+  left: 50%;
+  top: 2%;
+  transform: translateX(-50%);
+  width: 290px;
+  height: auto;
+  filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, 0.6));
+  pointer-events: none;
+}
+
+#title-logo {
+  width: 580px;
+  max-width: 86vw;
+  height: auto;
+  filter: drop-shadow(3px 3px 0 rgba(0, 0, 0, 0.7));
+}
+
+/* ---------- panels on the backdrop ---------- */
+
+/* relics march left to right along the top */
+#relics {
+  position: absolute;
+  left: 2%;
+  top: 2.5%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  max-width: 32%;
+  min-height: 36px;
+}
+
+#relics img {
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+  filter: drop-shadow(1px 1px 0 #000) drop-shadow(-1px -1px 0 #000);
+}
+
+.relics-empty {
+  font-family: var(--face-data);
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--grey);
+  text-shadow: 1px 1px 0 #000;
+}
+
+/* run details, top right */
+#run-info {
+  position: absolute;
+  right: 2%;
+  top: 2.5%;
+  width: 190px;
+  padding: 8px 10px;
+  border-style: solid;
+  border-width: 6px;
+  border-image: url("../assets/frame.png?v=13") 6 fill repeat;
+  image-rendering: pixelated;
+  font-family: var(--face-data);
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+/* scoreboard, hung on the black stadium structure (17%-44% down) */
+#scoreboard {
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: 46%;
+  padding: 6px 14px;
+  border-style: solid;
+  border-width: 6px;
+  border-image: url("../assets/frame.png?v=13") 6 fill repeat;
+  image-rendering: pixelated;
+}
+
+/* ---------- log ---------- */
+
+#log {
+  position: absolute;
+  left: 34%;
+  right: 30%;
+  bottom: 32%;
+  text-align: center;
+  font-family: var(--face-data);
+  font-size: 11px;
+  line-height: 1.5;
+  color: #e2ded4;
+  text-shadow: 1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000;
+  pointer-events: none;
+}
+
+/* ---------- info column ---------- */
+
+#diamond {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  flex: none;
+}
+
+.base,
+#home {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: url("../assets/base_empty.png?v=13") no-repeat center / 18px 18px;
+  image-rendering: pixelated;
+}
+
+.base.occupied { background-image: url("../assets/base_occupied.png?v=13"); }
+#home { opacity: 0.55; }
+.runner { display: none; }
+
+#base-2 { left: 33px; top: 0; }
+#base-1 { left: 65px; top: 32px; }
+#base-3 { left: 1px; top: 32px; }
+#home   { left: 33px; top: 64px; }
+
+/* frame.png is 9-sliced so these panels stretch without smearing */
+#count { font-family: var(--face-data); font-size: 12px; }
+
+.count-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+.count-label { width: 14px; font-weight: bold; color: var(--bone); }
+
+.pip {
+  display: inline-block;
+  width: 17px;
+  height: 17px;
+  margin-right: 3px;
+  background: url("../assets/pip_empty.png?v=13") no-repeat center / 17px 17px;
+  image-rendering: pixelated;
+  vertical-align: middle;
+}
+
+.pip.ball   { background-image: url("../assets/pip_ball.png?v=13"); }
+.pip.strike { background-image: url("../assets/pip_strike.png?v=13"); }
+.pip.out    { background-image: url("../assets/pip_out.png?v=13"); }
+
+#run-counter {
+  text-align: center;
+  padding: 0 6px;
+  font-family: var(--face-data);
+}
+
+#run-counter b { font-size: 26px; color: var(--light); line-height: 1; }
+#run-counter .of,
+#run-counter #target { font-size: 17px; color: var(--bone); }
+
+#run-counter small {
+  display: block;
+  margin-top: 3px;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--grey);
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  color: var(--grey);
+}
+
+.info-row b { color: var(--cream); font-size: 12px; }
+
+#stamina-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: var(--grey);
+}
+
+#stamina-label .sprite { width: 16px; height: 16px; object-fit: contain; }
+
+#stamina-bar {
+  display: block;
+  width: 100%;
+  height: 10px;
+  margin-top: 6px;
+  background: #12121a;
+  border: 1px solid #000;
+}
+
+#stamina-fill { display: block; height: 100%; width: 100%; background: #6fbf5a; }
+
+.tier-tired #stamina-fill { background: #d98a2a; }
+.tier-tired #stamina-label { color: #ff8072; }
+
+/* ---------- overlays ---------- */
+
+#select,
+#between,
+#result {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 10, 18, 0.95);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  z-index: 80;
+}
+
+/* the id has to be in the selector or the rules above beat .hidden
+   and the overlay never goes away. This has bitten once already. */
+#select.hidden,
+#between.hidden,
+#result.hidden { display: none; }
+
+#select h1,
+#between h1,
+#result h1 {
+  font-family: var(--face-data);
+  font-size: 34px;
+  letter-spacing: 4px;
+  color: var(--light);
+  text-shadow: 2px 2px 0 #000;
+}
+
+.sub,
+#result p,
+#between p {
+  font-family: var(--face-data);
+  color: var(--bone);
+  font-size: 13px;
+  max-width: 440px;
+  line-height: 1.6;
+}
+
+#character-list { display: flex; gap: 20px; margin-top: 10px; }
+
+.character {
+  width: 210px;
+  padding: 14px;
+  border-style: solid;
+  border-width: 6px;
+  border-image: url("../assets/frame.png?v=13") 6 fill repeat;
+  image-rendering: pixelated;
+  cursor: pointer;
+  transition: transform 0.15s ease-out;
+}
+
+.character:hover { transform: translateY(-6px); }
+
+/* portraits are 79/89/97 wide at about the same height, so centre them
+   in a fixed box and pin to the bottom or the three panels don't line up */
+.character .portrait {
+  height: 124px;
+  background: #0a0e16;
+  border: 1px solid #000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.character .portrait img {
+  height: 118px;
+  width: auto;
+  image-rendering: pixelated;
+}
+
+.character h2 {
+  font-family: var(--face-data);
+  font-size: 15px;
+  color: var(--light);
+  margin-bottom: 8px;
+}
+
+.character p {
+  font-family: var(--face-data);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--bone);
+}
+
+#between-stamina b { color: var(--cream); }
+.rest-note { color: #8fd67a !important; }
+
+.reward-prompt {
+  margin-top: 4px;
+  font-family: var(--face-data);
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: var(--grey);
+}
+
+#reward-cards { display: flex; gap: 22px; }
+
+/* rewards are picked by clicking - only the hand uses drag */
+.card.reward { margin: 0; cursor: pointer; transform: none; }
+.card.reward:hover {
+  transform: translateY(-8px) scale(1.04);
+  background-image: url("../assets/card_frame_hot.png?v=13");
+}
+
+#next-inning,
+#restart {
+  border: 0;
+  padding: 12px 26px;
+  background: url("../assets/btn.png?v=13") no-repeat center / 100% 100%;
+  image-rendering: pixelated;
+  font-family: var(--face-data);
+  font-weight: bold;
+  font-size: 14px;
+  letter-spacing: 1px;
+  color: var(--cream);
+  text-shadow: 1px 1px 0 #000;
+  cursor: pointer;
+  margin-top: 6px;
+}
+
+#next-inning:hover,
+#restart:hover {
+  background-image: url("../assets/btn_hot.png?v=13");
+  color: var(--ink);
+  text-shadow: none;
+}
+
+/* ---------- accessibility ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .character { transition: none; }
+  .card.dealt { animation: none; }
+  #contact.pop { animation: none; }
+}

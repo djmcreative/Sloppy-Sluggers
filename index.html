@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sloppy Sluggers</title>
+<link rel="stylesheet" href="css/style.css?v=13">
+</head>
+<body>
+
+<div id="game">
+
+  <!-- There is no chrome left. Every panel is positioned as a percentage
+       of #stage and sits directly on the backdrop art. Anchor points come
+       from the background itself: the mound is centred at 78% across and
+       its dirt ends at 62% down; the left base path sits under 23%/68%;
+       the black stadium silhouette runs 17%-44% down, which is where the
+       scoreboard hangs. Move those and the layout stops lining up. -->
+  <main id="field">
+   <div id="stage">
+
+    <!-- relics run left to right along the top -->
+    <div id="relics" title="Relics you have picked up this run.">
+      <span class="relics-empty">no relics yet</span>
+    </div>
+
+    <!-- run details, top right -->
+    <div id="run-info">
+      <div class="info-row"><span>BATTER</span><b id="who">--</b></div>
+      <div class="info-row"><span>INNING</span><b><span id="inning">1</span>/<span id="total-innings">9</span></b></div>
+      <div class="info-row"><span>TURN</span><b id="turn">1</b></div>
+      <div class="info-row" id="stamina-block" title="Stamina. Innings and outs wear you down.">
+        <span id="stamina-label">FRESH</span>
+        <b id="stamina-number">100</b>
+      </div>
+      <span id="stamina-bar"><span id="stamina-fill"></span></span>
+    </div>
+
+    <img id="game-logo" class="sprite" src="assets/logo.png?v=13" alt="Sloppy Sluggers">
+
+    <!-- scoreboard, hung on the black stadium structure -->
+    <div id="scoreboard">
+      <div id="count">
+        <div class="count-row"><span class="count-label">B</span><span id="balls"></span></div>
+        <div class="count-row"><span class="count-label">S</span><span id="strikes"></span></div>
+        <div class="count-row"><span class="count-label">O</span><span id="outs"></span></div>
+      </div>
+
+      <div id="diamond">
+        <div class="base" id="base-2"><span class="runner"></span></div>
+        <div class="base" id="base-3"><span class="runner"></span></div>
+        <div class="base" id="base-1"><span class="runner"></span></div>
+        <div id="home"></div>
+      </div>
+
+      <div id="run-counter">
+        <b id="runs">0</b><span class="of">/</span><span id="target">6</span>
+        <small>RUNS</small>
+      </div>
+    </div>
+
+    <!-- batter stands on the left base path -->
+    <div class="side" id="batter-side">
+      <div class="chips" id="batter-status"></div>
+      <div class="nameplate" id="batter-name">BATTER</div>
+      <div class="fighter">
+        <img id="batter-sprite" class="sprite" src="assets/char_deankean.png" alt="">
+      </div>
+    </div>
+
+    <!-- pitcher stands on the mound -->
+    <div class="side" id="pitcher-side">
+      <div id="intent" title="">
+        <img id="intent-icon" class="sprite" src="assets/intent_fastball.png" alt="">
+        <span id="intent-name">--</span>
+        <span id="intent-strikes"></span>
+      </div>
+      <div class="chips" id="pitcher-status"></div>
+      <div class="nameplate" id="pitcher-name">THE STARTER</div>
+      <div class="fighter">
+        <img id="pitcher-sprite" class="sprite" src="assets/enemy_pitcher.png" alt="">
+      </div>
+    </div>
+
+    <div id="log"></div>
+    <div id="contact"></div>
+    <div id="drop-hint">drag a card up to the field</div>
+
+    <div id="handbar">
+      <div id="energy" title="Energy. Every card costs some.">
+        <b id="energy-now">3</b><span id="energy-max-wrap">/<span id="energy-max">3</span></span>
+      </div>
+
+      <div id="hand"></div>
+
+      <div id="hand-right">
+        <div id="piles">
+          <div class="pile" title="Draw pile"><span class="pile-n" id="draw-count">0</span><small>DRAW</small></div>
+          <div class="pile" title="Discard pile"><span class="pile-n" id="discard-count">0</span><small>DISC</small></div>
+        </div>
+        <button id="end-turn">End Turn</button>
+      </div>
+    </div>
+
+   </div>
+  </main>
+
+  <!-- pick a character -->
+  <div id="select">
+    <img id="title-logo" class="sprite" src="assets/logo.png?v=13" alt="Sloppy Sluggers">
+    <p class="sub">Score 6 runs before he gets 3 outs.</p>
+    <div id="character-list"></div>
+  </div>
+
+  <!-- shown between innings -->
+  <div id="between" class="hidden">
+    <h1 id="between-title"></h1>
+    <p id="between-text"></p>
+    <div id="between-stamina"></div>
+    <p class="reward-prompt">Add a card to your deck:</p>
+    <div id="reward-cards"></div>
+    <button id="next-inning">Skip</button>
+  </div>
+
+  <!-- shown when the run ends -->
+  <div id="result" class="hidden">
+    <h1 id="result-title"></h1>
+    <p id="result-text"></p>
+    <button id="restart">Play Again</button>
+  </div>
+
+</div>
+
+<script src="js/cards.js?v=13"></script>
+<script src="js/run.js?v=13"></script>
+<script src="js/pitcher.js?v=13"></script>
+<script src="js/game.js?v=13"></script>
+<script src="js/ui.js?v=13"></script>
+<script src="js/main.js?v=13"></script>
+</body>
+</html>
