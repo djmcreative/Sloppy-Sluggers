@@ -32,11 +32,19 @@ function projectValue(G, w) {
   var margin, power;
 
   if (G.onOffense()) {
-    if (it.outOfZone || it.reactive === "risp") return 0;
+    // a pickoff throw is answerable now - sending the runner beats it, so
+    // the policy has to be able to see that saving him is worth a card
+    if (it.reactive === "risp") {
+      return (s.stoleThisTurn ? 0 : -w.out) + boardValue(G, w);
+    }
+    if (it.outOfZone) return boardValue(G, w);
     margin = R.BASE_CONTACT + s.contactMod - (it.stuff + s.settled);
     power = s.powerMod;
   } else {
-    if (it.takes || it.steals || it.sacFly) return 0;
+    if (it.steals) {
+      return (s.pickoffArmed ? w.theirOut : -w.advance) + boardValue(G, w);
+    }
+    if (it.takes || it.sacFly) return boardValue(G, w);
     margin = it.contact - (R.BASE_STUFF + s.stuffMod + s.settled);
     power = Math.max(0, it.power - s.gloveMod);
   }

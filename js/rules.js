@@ -153,10 +153,10 @@ var CARDS = {
 
   leg_it_out: { name: "Leg It Out", cost: 1,
     o: function (G) { G.contact(1); G.steal(); },
-    d: function (G) { G.stuff(1); G.pickoff(); } },
+    d: function (G) { G.stuff(1); G.hold(); } },
 
   slide: { name: "Slide", cost: 0,
-    o: function (G) { G.steal(); }, d: function (G) { G.pickoff(); } },
+    o: function (G) { G.steal(); }, d: function (G) { G.hold(); } },
 
   good_eye: { name: "Good Eye", cost: 0,
     o: function (G) { G.takeBall(); G.draw(1); },
@@ -168,7 +168,7 @@ var CARDS = {
 
   small_ball: { name: "Small Ball", cost: 1,
     o: function (G) { G.takeBall(); G.steal(); },
-    d: function (G) { G.stuff(1); G.pickoff(); } },
+    d: function (G) { G.stuff(1); G.hold(); } },
 
   dribbler: { name: "Dribbler", cost: 1,
     o: function (G) { G.contact(1); G.tagUp(); },
@@ -258,7 +258,7 @@ var REWARD_CARDS = {
 
   // ---- Speedster: manufacture ----
   jump_early:      { name: "Jump Early", cost: 0,
-    o: function (G) { G.steal(); }, d: function (G) { G.pickoff(); } },
+    o: function (G) { G.steal(); }, d: function (G) { G.hold(); } },
   delayed_steal:   { name: "Delayed Steal", cost: 1,
     o: function (G) { G.steal(); G.steal(); }, d: function (G) { G.pickoff(); G.stuff(1); } },
   hit_and_run:     { name: "Hit and Run", cost: 1,
@@ -372,6 +372,7 @@ function Game(options) {
     hand: [], draw: [], discard: [], exhausted: [],
     contactMod: 0, powerMod: 0, stuffMod: 0, gloveMod: 0, settled: 0,
     tagUpActive: false, dpArmed: false, forceFoul: false, tookPitch: false,
+    stoleThisTurn: false, pickoffArmed: false, pickedOffThisTurn: false,
     settleAnchor: 1, capSingle: false,
     turn: 1, powers: {}, intent: null, over: false
   };
@@ -392,6 +393,11 @@ Game.prototype.glove   = function (n) {
   this.state.gloveMod += this.mod("windOut") ? Math.floor(n / 2) : n;
 };
 Game.prototype.tagUp         = function () { this.state.tagUpActive = true; };
+
+// Holding the runner catches a steal attempt but doesn't retire anyone on
+// its own. Free cards get this; the real Pickoff, which is an out, costs
+// energy - a 0-cost card should not answer a reactive threat outright.
+Game.prototype.hold = function () { this.state.pickoffArmed = true; };
 
 // Settled is normally computed once at the start of a turn, so these have
 // to recompute it too - otherwise the card has no effect on the at-bat it
@@ -429,6 +435,8 @@ Game.prototype.advance = function (n) {
 
 Game.prototype.steal = function () {
   var s = this.state;
+  // your runner is moving, which is also what beats a pickoff throw
+  s.stoleThisTurn = true;
   for (var i = 2; i >= 0; i--) {
     if (!s.bases[i]) continue;
     s.bases[i] = false;
@@ -443,9 +451,15 @@ Game.prototype.steal = function () {
 // watching the diamond.
 Game.prototype.pickoff = function () {
   var s = this.state;
+  // holding the runner is also what catches him stealing
+  s.pickoffArmed = true;
+  // ONE throw over per turn. Without this, stacking three pickoff cards
+  // retired the side in a single turn.
+  if (s.pickedOffThisTurn) return false;
   for (var i = 2; i >= 1; i--) {
     if (!s.bases[i]) continue;
     s.bases[i] = false;
+    s.pickedOffThisTurn = true;
     this.recordOut();
     return true;
   }
@@ -532,6 +546,7 @@ Game.prototype.startTurn = function () {
   s.contactMod = 0; s.powerMod = 0; s.stuffMod = 0; s.gloveMod = 0;
   s.tagUpActive = false; s.dpArmed = false; s.forceFoul = false;
   s.capSingle = false;
+  s.stoleThisTurn = false; s.pickoffArmed = false; s.pickedOffThisTurn = false;
 
   this.draw(tierFor(this.run ? this.run.stamina : STAMINA.start).hand);
 
@@ -596,7 +611,14 @@ Game.prototype.resolveAtBat = function () {
   if (!it || this.halfOver) return;
 
   if (this.onOffense()) {
-    if (it.reactive === "risp") { this.pickoff(); return; }
+    // A pickoff used to be an unavoidable out - telegraphed, and nothing you
+    // could do about it. Now sending the runner beats the throw: play any
+    // Steal this turn and he's gone before the ball gets there.
+    if (it.reactive === "risp") {
+      if (s.stoleThisTurn) return;      // already moving, safe
+      this.pickoff();
+      return;
+    }
     if (it.junk) s.draw.push("junk");
 
     // taking the pitch: out of the zone is a ball, in the zone is a strike
@@ -612,7 +634,12 @@ Game.prototype.resolveAtBat = function () {
 
   } else {
     if (it.takes)  { this.giveBall(); return; }
-    if (it.steals) { this.steal(); return; }
+    // the mirror: hold the runner and you catch him stealing
+    if (it.steals) {
+      if (s.pickoffArmed) { this.recordOut(); return; }
+      this.steal();
+      return;
+    }
     if (it.sacFly) {
       if (s.bases[2]) { s.bases[2] = false; this.scoreRun(1); }
       this.recordOut();

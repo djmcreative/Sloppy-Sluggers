@@ -60,7 +60,14 @@ you've played Slay the Spire.
 many bases, and put yourself on. Runners who cross home plate score.
 
 **Steal** — move a runner up one base without hitting anything.
-**Pickoff** — catch a runner in scoring position. That's an out.
+**Pickoff** — catch a runner in scoring position. That's an out, and only
+one throw over per turn.
+**Hold** — you don't retire anyone, but he can't steal on you.
+
+Both reactive plays have an answer, and the readout tells you what it is.
+When he throws over, **any Steal sends your runner and beats the throw**.
+When he takes off, **any Pickoff or Hold catches him**. A telegraphed play you
+can't respond to is just a punishment, so neither one is a free out.
 
 **Strike / Ball** — some cards give *you* strikes or balls as a cost or a
 benefit. A strike is bad. A ball is good (4 balls = free baserunner).

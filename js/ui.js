@@ -7,7 +7,7 @@
 // was the first thing a playtester said about the previous version.
 
 var ART = "assets/";
-var ART_V = "?v=7";
+var ART_V = "?v=8";
 
 var STATUS_ICONS = {
   tired:     "status_tired.png",
@@ -122,8 +122,16 @@ var UI = {
 
     if (mine && it.outOfZone) outcome = { text: "BALL — TAKE IT", cls: "good" };
     if (!mine && it.takes)    outcome = { text: "HE TAKES A BALL", cls: "warn" };
-    if (mine && it.reactive === "risp") outcome = { text: "PICKOFF ATTEMPT", cls: "warn" };
-    if (!mine && it.steals)   outcome = { text: "HE'S STEALING", cls: "bad" };
+    if (mine && it.reactive === "risp") {
+      outcome = s.stoleThisTurn
+        ? { text: "SAFE — HE'S GOING", cls: "good" }
+        : { text: "PICKOFF — YOUR RUNNER IS OUT", cls: "bad" };
+    }
+    if (!mine && it.steals) {
+      outcome = s.pickoffArmed
+        ? { text: "CAUGHT STEALING", cls: "good" }
+        : { text: "HE STEALS THE BASE", cls: "bad" };
+    }
     if (!mine && it.sacFly)   outcome = { text: "SAC FLY", cls: "bad" };
 
     var ladder = "";
@@ -194,6 +202,21 @@ var UI = {
               ? " holding him to " + (net === 0 ? "a single" : (1 + net) + " bases")
               : (raw === 0 ? " he'd get a single" : " he'd take " + (1 + raw) + " bases"))
           : '<span class="warn"> only matters if he connects</span>'));
+    }
+
+    // the counters to the reactive pitches, said out loud - a telegraphed
+    // play you can't answer is just a punishment, and the answer is useless
+    // if nobody knows it exists
+    var it = Match.game.state.intent;
+    if (mine && it && it.reactive === "risp") {
+      return s.stoleThisTurn
+        ? '<span class="good">He took off in time — the throw is late.</span>'
+        : '<span class="warn">Play any <b>Steal</b> to send him and beat the throw.</span>';
+    }
+    if (!mine && it && it.steals) {
+      return s.pickoffArmed
+        ? '<span class="good">You held him — he\'s dead to rights.</span>'
+        : '<span class="warn">Play any <b>Pickoff</b> to hold him and catch the steal.</span>';
     }
 
     // everything that changes a ball in play, spelled out

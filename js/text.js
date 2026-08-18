@@ -47,6 +47,7 @@ var PHRASES = {
   draw:    function (n) { return "Draw " + n + "."; },
   steal:   function ()  { return "Steal a base."; },
   pickoff: function ()  { return "Pick off a runner in scoring position — that's an out."; },
+  hold:    function ()  { return "Hold the runner — catches him if he steals."; },
   tagUp:   function ()  { return '<span class="kw">Tag Up</span> — a ball in play scores your runner from third.'; },
   dp:      function ()  { return '<span class="kw">Double Play</span> — a ball in play doubles him off.'; },
   ball:    function ()  { return "Take a ball."; },
@@ -73,6 +74,7 @@ function makeProbe() {
     draw:    function (n) { calls.push(["draw", n]); },
     steal:   function ()  { calls.push(["steal"]); return true; },
     pickoff: function ()  { calls.push(["pickoff"]); return true; },
+    hold:    function ()  { calls.push(["hold"]); },
     tagUp:   function ()  { calls.push(["tagUp"]); },
     armDoublePlay: function () { calls.push(["dp"]); },
     takeBall: function () { calls.push(["ball"]); },
@@ -114,7 +116,7 @@ function describeSide(cardId, side) {
   });
 
   ["contact", "power", "stuff", "glove", "advance", "steal", "pickoff",
-   "ball", "giveBall", "strike", "tagUp", "dp", "chokeUp",
+   "ball", "giveBall", "strike", "tagUp", "dp", "hold", "chokeUp",
    "resetSettle", "settleEarly", "draw", "stamina"].forEach(function (key) {
     var m = merged[key];
     if (!m) return;
