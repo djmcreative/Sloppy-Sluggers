@@ -1,258 +1,371 @@
-// Everything that puts the game state on the screen.
+// Everything that puts state on the screen.
+//
+// The single most important element here is the at-bat readout: your Contact
+// against his Stuff, and what that margin will produce if you end the turn
+// now. The whole design depends on the player being able to see that they
+// are one Contact short of a hit. Hide it and the game is unreadable - which
+// was the first thing a playtester said about the previous version.
 
-// All art lives in one folder. The ?v= has to match the one in index.html
-// or the browser will happily serve you last week's sprites.
 var ART = "assets/";
-var ART_V = "?v=13";
+var ART_V = "?v=7";
 
-// 16x16 icons that ride inside the status chips
 var STATUS_ICONS = {
-  protect:      "status_protect.png",
   tired:     "status_tired.png",
-  dialedIn:  "status_dialedin.png",
-  settledIn: "status_settledin.png",
-  steal:     "status_steal.png"
+  settledin: "status_settledin.png",
+  dialedin:  "status_dialedin.png",
+  steal:     "status_steal.png",
+  protect:   "status_protect.png"
 };
 
-function icon(file, className) {
+var INTENT_ICONS = {
+  "Fastball": "intent_fastball.png",
+  "High Heat": "intent_highheat.png",
+  "Painted Corner": "intent_paintedcorner.png",
+  "Curveball": "intent_curveball.png",
+  "Waste Pitch": "intent_wastepitch.png",
+  "Pickoff": "intent_pickoff.png",
+  "Turn Two": "intent_turntwo.png",
+  // the batter's swings reuse the closest existing icon
+  "Contact Swing": "intent_fastball.png",
+  "Gap Shot": "intent_highheat.png",
+  "Big Cut": "intent_highheat.png",
+  "Bunt": "intent_wastepitch.png",
+  "Work the Count": "intent_wastepitch.png",
+  "Steal Attempt": "intent_pickoff.png",
+  "Sac Fly": "intent_turntwo.png"
+};
+
+function icon(file, cls) {
   if (!file) return "";
-  return '<img class="sprite' + (className ? " " + className : "") +
-         '" src="' + ART + file + ART_V + '" alt="">';
+  return '<img class="sprite' + (cls ? " " + cls : "") + '" src="' +
+         ART + file + ART_V + '" alt="">';
 }
 
 var UI = {
 
   messages: [],
   dealNext: false,
+  drag: null,
 
   // ---------- character select ----------
 
   showCharacterSelect: function () {
     var list = document.getElementById("character-list");
     list.innerHTML = "";
-
     for (var id in CHARACTERS) {
-      list.appendChild(this.buildCharacterCard(id));
+      list.appendChild(this.buildCharacterCard(id, CHARACTERS[id]));
     }
-
     document.getElementById("select").classList.remove("hidden");
   },
 
-  buildCharacterCard: function (id) {
-    var character = CHARACTERS[id];
-
-    var element = document.createElement("div");
-    element.className = "character";
-    element.innerHTML =
+  buildCharacterCard: function (id, character) {
+    var el = document.createElement("div");
+    el.className = "character";
+    el.innerHTML =
       '<div class="portrait"><img src="' + ART + character.portrait + ART_V + '" alt=""></div>' +
       "<h2>" + character.name + "</h2>" +
       "<p>" + character.blurb + "</p>";
-
-    element.addEventListener("click", function () {
-      startRun(id);
-    });
-
-    return element;
+    el.addEventListener("click", function () { startRun(id); });
+    return el;
   },
 
-  hideCharacterSelect: function () {
-    document.getElementById("select").classList.add("hidden");
+  // ---------- the at-bat readout ----------
+  //
+  // Reads differently depending on which side of the ball you're on, but the
+  // arithmetic is identical: one number against another.
+
+  // The readout counts ONLY what your cards contribute, starting at 0, and
+  // states the pitch as a requirement instead of a raw Stuff number. The
+  // engine still carries a baseline (see BASE_CONTACT / BASE_STUFF); folding
+  // it into the target is what makes the screen readable - a player should
+  // never have to wonder where a free +3 came from.
+  renderAtBat: function () {
+    var g = Match.game, s = g.state, it = s.intent;
+    var box = document.getElementById("atbat");
+    if (!it) { box.innerHTML = ""; return; }
+
+    var mine = g.onOffense();
+    var have, label, rungs, margin;
+
+    if (mine) {
+      have = s.contactMod;
+      label = "CONTACT";
+      // cards needed to land on each rung of the ladder
+      var floorC = it.stuff + s.settled - BASE_CONTACT;
+      margin = BASE_CONTACT + have - (it.stuff + s.settled);
+      // the HIT rung names the actual result at your current Power, so you
+      // can watch a power card turn SINGLE into DOUBLE without guessing
+      var payoff = ["", "SINGLE", "DOUBLE", "TRIPLE", "HOME RUN"][Math.min(4, 1 + s.powerMod)];
+      rungs = [
+        { key: "MISS", need: null, show: floorC + 1 > 0, hit: margin <= 0 },
+        { key: "OUT",  need: floorC + 1, hit: margin === 1 },
+        { key: payoff, need: floorC + 2, hit: margin >= 2 }
+      ];
+    } else {
+      have = s.stuffMod;
+      label = "STUFF";
+      // more Stuff is better here, so the ladder runs the other way
+      var floorS = it.contact - BASE_STUFF - s.settled;
+      margin = it.contact - (BASE_STUFF + have + s.settled);
+      // what he'd get right now, after your Glove
+      var damage = ["", "SINGLE", "DOUBLE", "TRIPLE", "HOME RUN"][
+        Math.min(4, 1 + Math.max(0, (it.power || 0) - s.gloveMod))];
+      rungs = [
+        { key: "HE HITS", need: null, sub: damage, show: floorS - 1 > 0, hit: margin >= 2 },
+        { key: "OUT",    need: floorS - 1, hit: margin === 1 },
+        { key: "STRIKE", need: floorS,     hit: margin <= 0 }
+      ];
+    }
+
+    var power = mine ? s.powerMod : Math.max(0, it.power - s.gloveMod);
+    var outcome = this.outcomeOf(margin, power, mine);
+
+    if (mine && it.outOfZone) outcome = { text: "BALL — TAKE IT", cls: "good" };
+    if (!mine && it.takes)    outcome = { text: "HE TAKES A BALL", cls: "warn" };
+    if (mine && it.reactive === "risp") outcome = { text: "PICKOFF ATTEMPT", cls: "warn" };
+    if (!mine && it.steals)   outcome = { text: "HE'S STEALING", cls: "bad" };
+    if (!mine && it.sacFly)   outcome = { text: "SAC FLY", cls: "bad" };
+
+    var ladder = "";
+    var quiet = (mine && (it.outOfZone || it.reactive === "risp")) ||
+                (!mine && (it.takes || it.steals || it.sacFly));
+    if (!quiet) {
+      rungs.forEach(function (r) {
+        // a rung you can't reach from zero isn't worth showing
+        if (r.need !== null && r.need < 0) return;
+        if (r.show === false) return;
+        var cls = "rung" + (r.hit ? " on" : "");
+        var n = r.sub !== undefined ? '<i>' + r.sub + "</i>"
+              : r.need === null ? "" : '<i>' + r.need + "</i>";
+        ladder += '<span class="' + cls + '">' + r.key + n + "</span>";
+      });
+    }
+
+    var settledNote = s.settled > 0
+      ? ' <span class="settled">' + (mine ? "he's settled in +" : "you're settled in +") + s.settled + "</span>"
+      : "";
+
+    box.innerHTML =
+      '<div class="ab-row">' +
+        '<div class="ab-side"><b>' + have + "</b><small>YOUR " + label + "</small>" +
+          "<i>from cards</i></div>" +
+        '<div class="ab-ladder">' + ladder + "</div>" +
+        '<div class="ab-outcome ' + outcome.cls + '">' + outcome.text + "</div>" +
+      "</div>" +
+      '<div class="ab-note">' + this.noteFor(margin, power, mine) + settledNote + "</div>";
+  },
+
+  // Contact decides WHETHER you reach base. Power decides HOW FAR. A huge
+  // Contact margin with no Power is still a single - the readout has to say
+  // so, because the two numbers are easy to conflate.
+  outcomeOf: function (margin, power, mine) {
+    // the foul rung is gone - anything short of a ball in play is a strike
+    if (margin <= 0)  return mine ? { text: "SWING AND MISS", cls: "bad" }
+                                  : { text: "STRIKE", cls: "good" };
+    if (margin === 1) return mine ? { text: "IN PLAY — OUT", cls: "warn" }
+                                  : { text: "IN PLAY — OUT", cls: "good" };
+
+    var bases = Math.min(4, 1 + power);
+    var name = ["", "SINGLE", "DOUBLE", "TRIPLE", "HOME RUN"][bases];
+    return mine ? { text: name, cls: "good" }
+                : { text: "HE GETS A " + name, cls: "bad" };
+  },
+
+  // The second line explains what Power and Glove are actually doing, and
+  // what will change the ball-in-play result.
+  noteFor: function (margin, power, mine) {
+    var s = Match.game.state;
+    var bits = [];
+
+    if (mine) {
+      // Power only pays out if you actually reach the hit rung. Saying so is
+      // the difference between a wasted card and a deliberate one.
+      bits.push('<span class="stat-chip">POWER ' + s.powerMod + "</span>" +
+        (margin >= 2
+          ? (s.powerMod > 0 ? " your hit goes " + Math.min(4, 1 + s.powerMod) + " bases"
+                            : " your hit is a single")
+          : '<span class="warn"> does nothing unless you reach a hit</span>'));
+    } else {
+      var raw = (Match.game.state.intent.power) || 0;
+      var net = Math.max(0, raw - s.gloveMod);
+      bits.push('<span class="stat-chip">GLOVE ' + s.gloveMod + "</span>" +
+        (margin >= 2
+          ? (s.gloveMod > 0
+              ? " holding him to " + (net === 0 ? "a single" : (1 + net) + " bases")
+              : (raw === 0 ? " he'd get a single" : " he'd take " + (1 + raw) + " bases"))
+          : '<span class="warn"> only matters if he connects</span>'));
+    }
+
+    // everything that changes a ball in play, spelled out
+    if (margin === 1) {
+      if (s.bases[0] && s.outs < OUTS_PER_HALF - 1) {
+        bits.push(mine ? '<span class="warn">double play risk</span>'
+                       : '<span class="good">double play chance</span>');
+      }
+      if (mine && s.tagUpActive && s.bases[2]) {
+        bits.push('<span class="good">TAG UP — the run scores</span>');
+      }
+      if (!mine && s.dpArmed && s.bases[0]) {
+        bits.push('<span class="good">DOUBLE PLAY armed</span>');
+      }
+      if (s.outs === OUTS_PER_HALF - 1) {
+        bits.push("third out — nobody advances");
+      }
+    }
+    return bits.join(" &nbsp;·&nbsp; ");
   },
 
   // ---------- main render ----------
 
   render: function () {
-    var s = Game.state;
-    if (!s) return;
+    var g = Match.game;
+    if (!g) return;
+    var s = g.state;
+    var mine = g.onOffense();
 
-    var me = CHARACTERS[s.character];
+    document.getElementById("stage").classList.toggle("fielding", !mine);
+    document.getElementById("phase").textContent =
+      (mine ? "TOP " : "BOTTOM ") + ordinal(Match.inning) +
+      (mine ? " — YOU'RE BATTING" : " — YOU'RE IN THE FIELD");
 
-    document.getElementById("who").textContent = me.name.toUpperCase();
-    document.getElementById("batter-name").textContent = me.name.toUpperCase();
-    document.getElementById("pitcher-name").textContent = PITCHER.name.toUpperCase();
+    document.getElementById("score-you").textContent = s.score.player;
+    document.getElementById("score-them").textContent = s.score.ai;
 
-    document.getElementById("batter-sprite").src = ART + me.sprite + ART_V;
-    document.getElementById("pitcher-sprite").src = ART + PITCHER.sprite + ART_V;
+    // series record, e.g. two wins and a loss
+    var rec = "";
+    for (var i = 0; i < 2; i++) rec += '<span class="pip-w' + (Run.state.wins > i ? " on" : "") + '"></span>';
+    for (var j = 0; j < 2; j++) rec += '<span class="pip-l' + (Run.state.losses > j ? " on" : "") + '"></span>';
+    document.getElementById("series").innerHTML = rec;
 
-    document.getElementById("inning").textContent = Run.state.inning;
-    document.getElementById("total-innings").textContent = TOTAL_INNINGS;
-    this.renderStamina();
-
-    document.getElementById("runs").textContent = s.runs;
-    document.getElementById("target").textContent = s.target;
-    document.getElementById("turn").textContent = s.turn;
-
-    this.renderIntent();
     this.renderCount();
     this.renderBases();
-    this.renderStatus();
+    this.renderIntent();
+    this.renderAtBat();
+    this.renderStamina();
+    this.renderHand();
 
     document.getElementById("energy-now").textContent = s.energy;
     document.getElementById("energy-max").textContent = s.maxEnergy;
-    document.getElementById("draw-count").textContent = s.drawPile.length;
-    document.getElementById("discard-count").textContent = s.discardPile.length;
-
-    this.renderHand();
-  },
-
-  renderStamina: function () {
-    var stamina = Run.state.stamina;
-    var tier = Run.tier();
-
-    document.getElementById("stamina-number").textContent = stamina;
-
-    // the icon only shows up once you're actually worn down
-    var label = document.getElementById("stamina-label");
-    label.innerHTML = (tier.label === "Tired" ? icon(STATUS_ICONS.tired) : "") +
-                      "<span>" + tier.label.toUpperCase() + "</span>";
-    document.getElementById("stamina-fill").style.width = (stamina / STAMINA.start * 100) + "%";
-
-    var block = document.getElementById("stamina-block");
-    block.className = "info-row tier-" + tier.label.toLowerCase();
-  },
-
-  renderIntent: function () {
-    var s = Game.state;
-
-    document.getElementById("intent-name").textContent = s.pitch ? s.pitch.name : "--";
-    document.getElementById("intent").title = s.pitch ? s.pitch.description : "";
-
-    var intentIcon = document.getElementById("intent-icon");
-    if (s.pitch && s.pitch.icon) {
-      intentIcon.src = ART + s.pitch.icon + ART_V;
-      intentIcon.style.visibility = "visible";
-    } else {
-      intentIcon.style.visibility = "hidden";
-    }
-
-    var incoming = Game.incomingStrikes();
-    var label = "";
-    if (incoming > 0) {
-      label = "x" + incoming;
-    } else if (s.pitch && s.pitch.doublePlay) {
-      label = "DP";
-    }
-    document.getElementById("intent-strikes").textContent = label;
+    document.getElementById("draw-count").textContent = s.draw.length;
+    document.getElementById("discard-count").textContent = s.discard.length;
+    // The two slots hold roles, not people: #batter-side is whoever is at the
+    // plate. So when you take the field, your character moves to the mound and
+    // the opponent walks up to hit.
+    var me = CHARACTERS[Run.state.character];
+    document.getElementById("batter-name").textContent =
+      (mine ? me.name : "The Batter").toUpperCase();
+    document.getElementById("pitcher-name").textContent =
+      (mine ? "The Pitcher" : me.name).toUpperCase();
+    document.getElementById("batter-sprite").src =
+      ART + (mine ? me.sprite : "enemy_pitcher.png") + ART_V;
+    document.getElementById("pitcher-sprite").src =
+      ART + (mine ? "enemy_pitcher.png" : me.sprite) + ART_V;
   },
 
   renderCount: function () {
-    var s = Game.state;
-    document.getElementById("balls").innerHTML = this.pips(s.balls, 3, "ball");
-    document.getElementById("strikes").innerHTML = this.pips(s.strikes, 2, "strike");
-    document.getElementById("outs").innerHTML = this.pips(s.outs, 2, "out");
-  },
-
-  // draws filled and empty dots, e.g. 2 balls out of 3 slots
-  pips: function (filled, total, className) {
-    var html = "";
-    for (var i = 0; i < total; i++) {
-      html += '<span class="pip' + (i < filled ? " " + className : "") + '"></span>';
+    function pips(n, max, cls) {
+      var out = "";
+      for (var i = 0; i < max; i++) out += '<span class="pip' + (i < n ? " " + cls : "") + '"></span>';
+      return out;
     }
-    return html;
+    var s = Match.game.state;
+    document.getElementById("balls").innerHTML = pips(s.balls, 3, "ball");
+    document.getElementById("strikes").innerHTML = pips(s.strikes, 2, "strike");
+    document.getElementById("outs").innerHTML = pips(s.outs, 2, "out");
   },
 
   renderBases: function () {
-    var s = Game.state;
-
+    var s = Match.game.state;
     for (var i = 0; i < 3; i++) {
-      var base = document.getElementById("base-" + (i + 1));
-      if (s.bases[i]) {
-        base.classList.add("occupied");
-      } else {
-        base.classList.remove("occupied");
-      }
+      var el = document.getElementById("base-" + (i + 1));
+      if (el) el.classList.toggle("occupied", !!s.bases[i]);
     }
   },
 
-  renderStatus: function () {
-    var s = Game.state;
+  renderIntent: function () {
+    var g = Match.game, s = g.state, it = s.intent;
+    var nameEl = document.getElementById("intent-name");
+    var iconEl = document.getElementById("intent-icon");
+    var numEl = document.getElementById("intent-number");
 
-    var batter = "";
-    if (s.protect > 0) {
-      batter += '<span class="chip">' + icon(STATUS_ICONS.protect) + "Protect " + s.protect + "</span>";
-    }
-    if (s.tippedPitch > 0) {
-      batter += '<span class="chip">Tipped Pitch ' + s.tippedPitch + "</span>";
-    }
-    if (s.stoleThisTurn) {
-      batter += '<span class="chip">' + icon(STATUS_ICONS.steal) + "Stole</span>";
-    }
-    if (s.powers.veteran > 0) {
-      batter += '<span class="chip">Veteran Presence</span>';
-    }
-    if (s.powers.captain > 0) {
-      batter += '<span class="chip">Captain</span>';
-    }
-    if (s.powers.trackStar > 0) {
-      batter += '<span class="chip">Track Star</span>';
-    }
-    document.getElementById("batter-status").innerHTML = batter;
+    if (!it) { nameEl.textContent = "--"; numEl.textContent = ""; return; }
 
-    var pitcher = "";
-    if (s.velocity > 0) {
-      pitcher += '<span class="chip">' + icon(STATUS_ICONS.settledIn) + "Settled In +" + s.velocity + "</span>";
+    nameEl.textContent = it.name;
+    var file = INTENT_ICONS[it.name];
+    if (file) { iconEl.src = ART + file + ART_V; iconEl.style.visibility = "visible"; }
+    else iconEl.style.visibility = "hidden";
+
+    if (g.onOffense()) numEl.textContent = "STUFF " + (it.stuff + s.settled);
+    else numEl.textContent = "CONTACT " + it.contact;
+
+    // his settling-in is the reason long at-bats are dangerous, so say so
+    var chips = "";
+    if (s.settled > 0) {
+      chips = '<span class="chip">' + icon(STATUS_ICONS.settledin) +
+              (g.onOffense() ? "Settled In +" : "You're dialed in +") + s.settled + "</span>";
     }
-    if (s.dialedIn > 0) {
-      pitcher += '<span class="chip">' + icon(STATUS_ICONS.dialedIn) + "Dialed In +" + s.dialedIn + "</span>";
-    }
-    document.getElementById("pitcher-status").innerHTML = pitcher;
+    document.getElementById("pitcher-status").innerHTML = chips;
   },
+
+  renderStamina: function () {
+    var st = Run.state.stamina;
+    var tier = tierFor(st);
+    document.getElementById("stamina-number").textContent = st;
+    document.getElementById("stamina-label").innerHTML =
+      (tier.label === "Fresh" ? "" : icon(STATUS_ICONS.tired)) +
+      "<span>" + tier.label.toUpperCase() + "</span>";
+    document.getElementById("stamina-fill").style.width = st + "%";
+    document.getElementById("stamina-block").className =
+      "info-row tier-" + tier.label.toLowerCase();
+  },
+
+  // ---------- hand ----------
 
   renderHand: function () {
-    var s = Game.state;
+    var s = Match.game.state;
     var hand = document.getElementById("hand");
     hand.innerHTML = "";
-
-    // --mid is the centre slot; the css leans each card away from it
     var mid = (s.hand.length - 1) / 2;
 
     for (var i = 0; i < s.hand.length; i++) {
       var card = this.buildCard(s.hand[i], i);
       card.style.setProperty("--i", i);
       card.style.setProperty("--mid", mid);
-      // only animate the deal on a fresh hand, not after every card played
       if (this.dealNext) card.classList.add("dealt");
       hand.appendChild(card);
     }
     this.dealNext = false;
   },
 
+  // In combat only the ACTIVE side is shown - the other side would be noise
+  // when you can't use it. Both sides appear in the reward draft, where the
+  // whole decision is about weighing them against each other.
   buildCard: function (cardId, handIndex) {
+    var g = Match.game;
     var card = CARDS[cardId];
-    var playable = !card.unplayable && Game.state.energy >= card.cost;
+    var playable = !card.unplayable && card.cost <= g.state.energy;
+    var mine = g.onOffense();
 
-    var element = document.createElement("div");
-    element.className = "card" + (playable ? "" : " unplayable");
-    element.innerHTML =
+    var el = document.createElement("div");
+    el.className = "card" + (playable ? "" : " unplayable") + (mine ? " offense" : " defense");
+    el.innerHTML =
       '<div class="card-cost">' + card.cost + "</div>" +
       '<div class="card-name">' + card.name + "</div>" +
-      '<div class="card-text"><span class="card-body">' + card.text + "</span></div>";
+      '<div class="card-side">' + (mine ? "AT THE PLATE" : "IN THE FIELD") + "</div>" +
+      '<div class="card-text"><span class="card-body">' +
+        describeSide(cardId, mine ? "o" : "d") + "</span></div>";
 
     if (playable) {
-      element.tabIndex = 0;
-      element.addEventListener("pointerdown", function (event) {
-        UI.startDrag(event, element, handIndex);
-      });
-      // keyboard players can't drag, so give them a way in
-      element.addEventListener("keydown", function (event) {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          UI.playFromHand(handIndex);
-        }
+      el.tabIndex = 0;
+      el.addEventListener("pointerdown", function (e) { UI.startDrag(e, el, handIndex); });
+      el.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); UI.playFromHand(handIndex); }
       });
     }
-
-    return element;
+    return el;
   },
 
-  // ---------- dragging a card onto the field ----------
-  //
-  // Cards are played by dragging them up onto the grass. The drop target is
-  // the stage above the hand - anywhere lower is treated as a miss and the
-  // card snaps back. Pointer events rather than HTML5 drag-and-drop, because
-  // the native one can't be styled and fights the fan transforms.
-
-  drag: null,
+  // ---------- drag to play ----------
 
   startDrag: function (event, element, handIndex) {
     if (this.drag) return;
@@ -260,19 +373,12 @@ var UI = {
     event.preventDefault();
 
     var box = element.getBoundingClientRect();
-
-    // a stand-in keeps the fan from collapsing while the card is out of it
     var ghost = element.cloneNode(true);
     ghost.classList.add("ghost");
     element.parentNode.insertBefore(ghost, element);
 
-    this.drag = {
-      element: element,
-      ghost: ghost,
-      handIndex: handIndex,
-      grabX: event.clientX - box.left,
-      grabY: event.clientY - box.top
-    };
+    this.drag = { element: element, ghost: ghost, handIndex: handIndex,
+                  grabX: event.clientX - box.left, grabY: event.clientY - box.top };
 
     element.classList.add("dragging");
     element.style.width = box.width + "px";
@@ -287,23 +393,14 @@ var UI = {
   moveDrag: function (event) {
     var d = this.drag;
     if (!d) return;
-
     d.element.style.left = (event.clientX - d.grabX) + "px";
     d.element.style.top = (event.clientY - d.grabY) + "px";
-
-    var stage = document.getElementById("stage");
-    if (this.overField(event)) {
-      stage.classList.add("armed");
-    } else {
-      stage.classList.remove("armed");
-    }
+    document.getElementById("stage").classList.toggle("armed", this.overField(event));
   },
 
-  // the field is the stage above the hand - the hand's own strip doesn't count
   overField: function (event) {
     var stage = document.getElementById("stage").getBoundingClientRect();
     var hand = document.getElementById("handbar").getBoundingClientRect();
-
     return event.clientX >= stage.left && event.clientX <= stage.right &&
            event.clientY >= stage.top && event.clientY < hand.top;
   },
@@ -311,7 +408,6 @@ var UI = {
   endDrag: function (event) {
     var d = this.drag;
     if (!d) return;
-
     document.removeEventListener("pointermove", UI.onDragMove);
     document.removeEventListener("pointerup", UI.onDragEnd);
     document.removeEventListener("pointercancel", UI.onDragEnd);
@@ -322,126 +418,105 @@ var UI = {
 
     if (d.ghost && d.ghost.parentNode) d.ghost.parentNode.removeChild(d.ghost);
     d.element.classList.remove("dragging");
-    d.element.style.left = "";
-    d.element.style.top = "";
-    d.element.style.width = "";
-    d.element.style.height = "";
+    d.element.style.left = ""; d.element.style.top = "";
+    d.element.style.width = ""; d.element.style.height = "";
     this.drag = null;
 
-    if (dropped) {
-      this.playFromHand(index);
-    } else {
-      this.render();   // snaps it back into the fan
-    }
+    if (dropped) this.playFromHand(index); else this.render();
   },
 
   playFromHand: function (handIndex) {
     this.flashContact();
-    Game.playCard(handIndex);
+    Match.game.playCard(handIndex);
+    this.render();
   },
 
   flashContact: function () {
-    var flash = document.getElementById("contact");
-    if (!flash) return;
-    flash.classList.remove("pop");
-    void flash.offsetWidth;    // restart the animation
-    flash.classList.add("pop");
+    var f = document.getElementById("contact");
+    if (!f) return;
+    f.classList.remove("pop");
+    void f.offsetWidth;
+    f.classList.add("pop");
   },
 
   // ---------- log ----------
 
-  // keeps the last few messages on screen so you can follow what happened
   log: function (message) {
     this.messages.push(message);
-    if (this.messages.length > 8) {
-      this.messages.shift();
-    }
-    document.getElementById("log").innerHTML = this.messages.join("<br>");
+    if (this.messages.length > 4) this.messages.shift();
+    var el = document.getElementById("log");
+    if (el) el.innerHTML = this.messages.join("<br>");
   },
 
-  clearLog: function () {
-    this.messages = [];
-    document.getElementById("log").innerHTML = "";
-  },
+  // ---------- overlays ----------
 
-  // ---------- result ----------
+  showGameResult: function (won, you, them) {
+    var box = document.getElementById("between");
+    var r = Run.state;
 
-  // called at the end of every inning - either move on or end the run
-  showInningResult: function (won) {
-    document.getElementById("end-turn").disabled = true;
+    document.getElementById("between-title").textContent = won ? "YOU WIN" : "YOU LOSE";
+    document.getElementById("between-score").textContent =
+      "Final: " + you + " — " + them + "   |   Series " + r.wins + "–" + r.losses;
 
-    if (Run.state.over) {
-      this.showRunResult();
+    if (r.over) {
+      this.showRunResult(r.won);
       return;
     }
 
-    var s = Game.state;
-    var spent = STAMINA.perTurn * s.turn + STAMINA.perOut * s.outs;
-
-    document.getElementById("between-title").textContent = "INNING " + (Run.state.inning - 1) + " WON";
-    document.getElementById("between-text").textContent =
-      s.runs + " runs in " + s.turn + " turns. That inning cost you about " + spent + " stamina.";
-
-    var note = "";
-    if (Run.isOffDay() === false && OFF_DAY_AFTER.indexOf(Run.state.inning - 1) !== -1) {
-      note = "<p class='rest-note'>Off day. You get " + STAMINA.offDayRest + " stamina back.</p>";
-    }
-    document.getElementById("between-stamina").innerHTML =
-      note + "<p>Stamina: <b>" + Run.state.stamina + "</b> (" + Run.tier().label + ")</p>";
-
-    this.renderRewards();
-    document.getElementById("between").classList.remove("hidden");
-  },
-
-  // three cards to pick from, or skip
-  renderRewards: function () {
-    var wrap = document.getElementById("reward-cards");
-    wrap.innerHTML = "";
-
-    var picks = Run.rollRewards();
-    for (var i = 0; i < picks.length; i++) {
-      wrap.appendChild(this.buildRewardCard(picks[i]));
-    }
-  },
-
-  buildRewardCard: function (cardId) {
-    var card = CARDS[cardId];
-
-    var element = document.createElement("div");
-    element.className = "card reward";
-    element.innerHTML =
-      '<div class="card-cost">' + card.cost + "</div>" +
-      '<div class="card-name">' + card.name + "</div>" +
-      '<div class="card-text"><span class="card-body">' + card.text + "</span></div>";
-
-    element.addEventListener("click", function () {
-      Run.addCardToDeck(cardId);
-      UI.log("Added " + card.name + " to your deck.");
-      nextInning();
+    // reward draft, showing BOTH sides so the choice is informed
+    var rewards = document.getElementById("reward-cards");
+    rewards.innerHTML = "";
+    var offered = Run.rollRewards();
+    offered.forEach(function (id) {
+      rewards.appendChild(UI.buildRewardCard(id));
     });
 
-    return element;
+    document.getElementById("skip-reward").onclick = function () { UI.nextGame(); };
+    box.classList.remove("hidden");
   },
 
-  showRunResult: function () {
-    var r = Run.state;
+  buildRewardCard: function (id) {
+    var card = CARDS[id];
+    var el = document.createElement("div");
+    el.className = "card reward two-sided";
+    el.innerHTML =
+      '<div class="card-cost">' + card.cost + "</div>" +
+      '<div class="card-name">' + card.name + "</div>" +
+      '<div class="card-text"><span class="card-body">' +
+        '<span class="side-label">AT THE PLATE</span>' + describeSide(id, "o") +
+        '<span class="side-rule"></span>' +
+        '<span class="side-label">IN THE FIELD</span>' + describeSide(id, "d") +
+      "</span></div>";
+    el.addEventListener("click", function () {
+      Run.addCard(id);
+      UI.nextGame();
+    });
+    return el;
+  },
 
-    document.getElementById("result-title").textContent = r.won ? "ACT CLEARED" : "SIDE RETIRED";
-    document.getElementById("result-text").textContent = r.won
-      ? "You got through all " + TOTAL_INNINGS + " innings with " + r.stamina + " stamina left."
-      : "Three outs in inning " + r.inning + ". The run is over.";
+  nextGame: function () {
+    Run.recover(STAMINA.restNode);
+    document.getElementById("between").classList.add("hidden");
+    UI.messages = [];
+    Match.startGame();
+  },
 
-    document.getElementById("result").classList.remove("hidden");
+  showRunResult: function (won) {
+    document.getElementById("between").classList.add("hidden");
+    var box = document.getElementById("result");
+    document.getElementById("result-title").textContent = won ? "SERIES WON" : "SERIES LOST";
+    document.getElementById("result-text").textContent = won
+      ? "You took the series " + Run.state.wins + "–" + Run.state.losses + "."
+      : "They took the series " + Run.state.losses + "–" + Run.state.wins + ". Run over.";
+    box.classList.remove("hidden");
   },
 
   hideOverlays: function () {
     document.getElementById("result").classList.add("hidden");
     document.getElementById("between").classList.add("hidden");
-    document.getElementById("end-turn").disabled = false;
+    document.getElementById("select").classList.add("hidden");
   }
-
 };
 
-// stable references, or removeEventListener will not match the handler
-UI.onDragMove = function (event) { UI.moveDrag(event); };
-UI.onDragEnd  = function (event) { UI.endDrag(event); };
+UI.onDragMove = function (e) { UI.moveDrag(e); };
+UI.onDragEnd = function (e) { UI.endDrag(e); };

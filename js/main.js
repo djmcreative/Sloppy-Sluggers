@@ -1,33 +1,27 @@
-// Starts the run and hooks up the buttons.
+// Startup and button wiring.
 
 function startRun(characterId) {
-  UI.clearLog();
-  UI.hideOverlays();
-  UI.hideCharacterSelect();
-
   Run.start(characterId);
-  Game.start(characterId);
-  UI.render();
+  UI.messages = [];
+  UI.hideOverlays();
+  Match.startGame();
 }
 
-function nextInning() {
-  UI.clearLog();
-  UI.hideOverlays();
-  Game.start(Run.state.character);
-  UI.render();
-}
-
-document.getElementById("end-turn").addEventListener("click", function () {
-  Game.endTurn();
-});
-
-document.getElementById("next-inning").addEventListener("click", function () {
-  nextInning();
-});
-
-document.getElementById("restart").addEventListener("click", function () {
-  UI.hideOverlays();
+function boot() {
   UI.showCharacterSelect();
-});
 
-UI.showCharacterSelect();
+  document.getElementById("end-turn").addEventListener("click", function () {
+    UI.dealNext = true;
+    Match.endTurn();
+  });
+
+  document.getElementById("restart").addEventListener("click", function () {
+    document.getElementById("result").classList.add("hidden");
+    UI.showCharacterSelect();
+  });
+}
+
+if (typeof document !== "undefined") {
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+}

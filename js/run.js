@@ -1,23 +1,13 @@
-// The run: everything that carries from one inning to the next.
+// The run: a series of games, the deck that carries between them, and the
+// stamina that carries across the whole act.
 //
-// Stamina is fuel, not health. Running out doesn't end the run - it just
-// means you play the late innings with less energy and a smaller hand.
+// ACT = best of 3. Win two games and the act is yours; lose two and the run
+// is over. Losing a single game is survivable, which is the whole point of
+// the series structure.
 
-var STAMINA_TIERS = [
-  { min: 40, energy: 3, handSize: 5, label: "Fresh" },
-  { min: 0,  energy: 3, handSize: 4, label: "Tired" }
-];
-
-var STAMINA = {
-  start: 100,
-  perInning: 10,    // just showing up and playing an inning
-  perTurn: 0,       // every turn you spend in an inning
-  perOut: 4,        // every out he gets on you
-  offDayRest: 25    // what an off day gives back - relief, not a reset
-};
-
-var TOTAL_INNINGS = 9;
-var OFF_DAY_AFTER = [3, 6];   // you get a breather after these innings
+var GAMES_TO_WIN = 2;
+var GAMES_TO_LOSE = 2;
+var INNINGS_PER_GAME = 3;
 
 var Run = {
 
@@ -28,92 +18,46 @@ var Run = {
       character: characterId,
       deck: CHARACTERS[characterId].deck.slice(),
       stamina: STAMINA.start,
-      inning: 1,
+      act: 1,
+      wins: 0,
+      losses: 0,
+      gameNumber: 1,
       over: false,
       won: false
     };
   },
 
-  // ---------- stamina ----------
+  tier: function () { return tierFor(this.state.stamina); },
 
-  spend: function (amount) {
+  spend: function (n) {
+    this.state.stamina = Math.max(0, this.state.stamina - n);
+  },
+
+  recover: function (n) {
+    this.state.stamina = Math.min(STAMINA.start, this.state.stamina + n);
+  },
+
+  // called once a game has finished
+  recordGame: function (won) {
     var r = this.state;
-    r.stamina = Math.max(0, r.stamina - amount);
+    if (won) r.wins++; else r.losses++;
+    r.gameNumber++;
+
+    if (r.wins >= GAMES_TO_WIN) { r.over = true; r.won = true; }
+    else if (r.losses >= GAMES_TO_LOSE) { r.over = true; r.won = false; }
   },
 
-  rest: function () {
-    this.recover(STAMINA.offDayRest);
-  },
+  seriesOver: function () { return this.state.over; },
 
-  recover: function (amount) {
-    var r = this.state;
-    r.stamina = Math.min(STAMINA.start, r.stamina + amount);
-  },
-
-  // three cards to choose from after an inning
+  // three from the pool, and you may take none of them
   rollRewards: function () {
-    var pool = CHARACTERS[this.state.character].rewards.slice();
+    var pool = REWARD_POOLS[this.state.character].slice();
     var picks = [];
-
-    while (picks.length < 3 && pool.length > 0) {
-      var index = Math.floor(Math.random() * pool.length);
-      var cardId = pool.splice(index, 1)[0];
-
-      // don't offer the same card twice in one set
-      if (picks.indexOf(cardId) === -1) {
-        picks.push(cardId);
-      }
+    while (picks.length < 3 && pool.length) {
+      picks.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
     }
     return picks;
   },
 
-  tier: function () {
-    var stamina = this.state.stamina;
-
-    for (var i = 0; i < STAMINA_TIERS.length; i++) {
-      if (stamina >= STAMINA_TIERS[i].min) {
-        return STAMINA_TIERS[i];
-      }
-    }
-    return STAMINA_TIERS[STAMINA_TIERS.length - 1];
-  },
-
-  // ---------- deck ----------
-
-  // junk the pitcher gives you sticks around for the rest of the run
-  addCardToDeck: function (cardId) {
-    this.state.deck.push(cardId);
-  },
-
-  // ---------- innings ----------
-
-  isOffDay: function () {
-    return OFF_DAY_AFTER.indexOf(this.state.inning) !== -1;
-  },
-
-  isLastInning: function () {
-    return this.state.inning >= TOTAL_INNINGS;
-  },
-
-  finishInning: function (won) {
-    var r = this.state;
-
-    if (!won) {
-      r.over = true;
-      r.won = false;
-      return;
-    }
-
-    if (this.isLastInning()) {
-      r.over = true;
-      r.won = true;
-      return;
-    }
-
-    if (this.isOffDay()) {
-      this.rest();
-    }
-    r.inning++;
-  }
-
+  addCard: function (id) { this.state.deck.push(id); }
 };
