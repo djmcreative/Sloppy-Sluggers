@@ -52,6 +52,9 @@ function projectValue(G, w) {
   var v;
   if (margin <= 0) {
     v = -w.strike * (s.strikes >= 2 ? 2.2 : 1);          // swing and miss
+  } else if (margin === 1 && !G.onOffense() && s.gloveMod < 1) {
+    // fielder's choice: the out, but everyone moves up
+    v = -w.out + runners * w.advance * 1.6 + (onThird ? w.run : 0);
   } else if (margin === 1) {
     // ball in play: an out, but it can be productive
     v = -w.out;

@@ -93,7 +93,7 @@ body {
 #backdrop {
   position: absolute;
   inset: 0;
-  background: url("../assets/bg_field.png?v=8") center / 100% 100% no-repeat;
+  background: url("../assets/bg_field.png?v=12") center / 100% 100% no-repeat;
   image-rendering: pixelated;
   transition: transform 0.45s ease-in-out;
 }
@@ -225,7 +225,7 @@ body {
   right: 6%;
   top: 8px;
   height: 6px;
-  background: url("../assets/chalk_line.png?v=8") repeat-x center / auto 6px;
+  background: url("../assets/chalk_line.png?v=12") repeat-x center / auto 6px;
   image-rendering: pixelated;
   opacity: 0.5;
 }
@@ -234,7 +234,7 @@ body {
   flex: none;
   width: 96px;
   height: 96px;
-  background: url("../assets/energy_ball.png?v=8") no-repeat center / 96px 96px;
+  background: url("../assets/energy_ball.png?v=12") no-repeat center / 96px 96px;
   image-rendering: pixelated;
   display: flex;
   align-items: center;
@@ -269,7 +269,7 @@ body {
 .pile {
   width: 68px;
   height: 92px;
-  background: url("../assets/card_back.png?v=8") no-repeat center / 68px 92px;
+  background: url("../assets/card_back.png?v=12") no-repeat center / 68px 92px;
   image-rendering: pixelated;
   display: flex;
   flex-direction: column;
@@ -306,7 +306,7 @@ body {
   height: 190px;
   flex: none;
   margin: 0 -16px;              /* slight overlap, like a real hand */
-  background: url("../assets/card_frame.png?v=8") no-repeat center / 140px 190px;
+  background: url("../assets/card_frame.png?v=12") no-repeat center / 140px 190px;
   image-rendering: pixelated;
   color: var(--ink);
   cursor: grab;
@@ -323,7 +323,7 @@ body {
 .card:hover,
 .card:focus-visible {
   transform: translateY(-26px) scale(1.06) rotate(0deg);
-  background-image: url("../assets/card_frame_hot.png?v=8");
+  background-image: url("../assets/card_frame_hot.png?v=12");
   z-index: 5;
   outline: none;
 }
@@ -335,7 +335,7 @@ body {
 
 .card.unplayable:hover {
   transform: rotate(calc((var(--i) - var(--mid)) * 4deg));
-  background-image: url("../assets/card_frame.png?v=8");
+  background-image: url("../assets/card_frame.png?v=12");
 }
 
 /* while dragging, the card is pinned to the cursor by ui.js */
@@ -346,7 +346,7 @@ body {
   transition: none;
   pointer-events: none;
   transform: rotate(-3deg) scale(1.08);
-  background-image: url("../assets/card_frame_hot.png?v=8");
+  background-image: url("../assets/card_frame_hot.png?v=12");
   filter: drop-shadow(0 12px 10px rgba(0, 0, 0, 0.55));
 }
 
@@ -362,7 +362,7 @@ body {
   left: -12px;
   width: 40px;
   height: 40px;
-  background: url("../assets/cost_ball.png?v=8") no-repeat center / 40px 40px;
+  background: url("../assets/cost_ball.png?v=12") no-repeat center / 40px 40px;
   image-rendering: pixelated;
   text-align: center;
   line-height: 40px;
@@ -438,7 +438,7 @@ body {
 #skip-reward {
   border: 0;
   padding: 10px 20px;
-  background: url("../assets/btn.png?v=8") no-repeat center / 100% 100%;
+  background: url("../assets/btn.png?v=12") no-repeat center / 100% 100%;
   image-rendering: pixelated;
   font-family: var(--face-data);
   font-size: 12px;
@@ -447,7 +447,7 @@ body {
   text-shadow: 1px 1px 0 #000;
   cursor: pointer;
 }
-#skip-reward:hover { background-image: url("../assets/btn_hot.png?v=8"); color: var(--ink); text-shadow: none; }
+#skip-reward:hover { background-image: url("../assets/btn_hot.png?v=12"); color: var(--ink); text-shadow: none; }
 
 .card-text {
   position: absolute;
@@ -525,7 +525,7 @@ body {
 #end-turn {
   border: 0;
   padding: 14px 26px;
-  background: url("../assets/btn.png?v=8") no-repeat center / 100% 100%;
+  background: url("../assets/btn.png?v=12") no-repeat center / 100% 100%;
   image-rendering: pixelated;
   font-family: var(--face-data);
   font-weight: bold;
@@ -537,7 +537,7 @@ body {
 }
 
 #end-turn:hover:not(:disabled) {
-  background-image: url("../assets/btn_hot.png?v=8");
+  background-image: url("../assets/btn_hot.png?v=12");
   color: var(--ink);
   text-shadow: none;
 }
@@ -582,7 +582,7 @@ body {
   padding: 8px 18px;
   border-style: solid;
   border-width: 6px;
-  border-image: url("../assets/frame.png?v=8") 6 fill repeat;
+  border-image: url("../assets/frame.png?v=12") 6 fill repeat;
   image-rendering: pixelated;
   font-family: var(--face-data);
   white-space: nowrap;
@@ -734,7 +734,7 @@ body {
   padding: 8px 10px;
   border-style: solid;
   border-width: 6px;
-  border-image: url("../assets/frame.png?v=8") 6 fill repeat;
+  border-image: url("../assets/frame.png?v=12") 6 fill repeat;
   image-rendering: pixelated;
   font-family: var(--face-data);
   font-size: 11px;
@@ -754,7 +754,7 @@ body {
   padding: 6px 14px;
   border-style: solid;
   border-width: 6px;
-  border-image: url("../assets/frame.png?v=8") 6 fill repeat;
+  border-image: url("../assets/frame.png?v=12") 6 fill repeat;
   image-rendering: pixelated;
 }
 
@@ -788,11 +788,11 @@ body {
   position: absolute;
   width: 18px;
   height: 18px;
-  background: url("../assets/base_empty.png?v=8") no-repeat center / 18px 18px;
+  background: url("../assets/base_empty.png?v=12") no-repeat center / 18px 18px;
   image-rendering: pixelated;
 }
 
-.base.occupied { background-image: url("../assets/base_occupied.png?v=8"); }
+.base.occupied { background-image: url("../assets/base_occupied.png?v=12"); }
 #home { opacity: 0.55; }
 .runner { display: none; }
 
@@ -818,14 +818,14 @@ body {
   width: 17px;
   height: 17px;
   margin-right: 3px;
-  background: url("../assets/pip_empty.png?v=8") no-repeat center / 17px 17px;
+  background: url("../assets/pip_empty.png?v=12") no-repeat center / 17px 17px;
   image-rendering: pixelated;
   vertical-align: middle;
 }
 
-.pip.ball   { background-image: url("../assets/pip_ball.png?v=8"); }
-.pip.strike { background-image: url("../assets/pip_strike.png?v=8"); }
-.pip.out    { background-image: url("../assets/pip_out.png?v=8"); }
+.pip.ball   { background-image: url("../assets/pip_ball.png?v=12"); }
+.pip.strike { background-image: url("../assets/pip_strike.png?v=12"); }
+.pip.out    { background-image: url("../assets/pip_out.png?v=12"); }
 
 #run-counter {
   text-align: center;
@@ -930,7 +930,7 @@ body {
   padding: 14px;
   border-style: solid;
   border-width: 6px;
-  border-image: url("../assets/frame.png?v=8") 6 fill repeat;
+  border-image: url("../assets/frame.png?v=12") 6 fill repeat;
   image-rendering: pixelated;
   cursor: pointer;
   transition: transform 0.15s ease-out;
@@ -988,14 +988,14 @@ body {
 .card.reward { margin: 0; cursor: pointer; transform: none; }
 .card.reward:hover {
   transform: translateY(-8px) scale(1.04);
-  background-image: url("../assets/card_frame_hot.png?v=8");
+  background-image: url("../assets/card_frame_hot.png?v=12");
 }
 
 #next-inning,
 #restart {
   border: 0;
   padding: 12px 26px;
-  background: url("../assets/btn.png?v=8") no-repeat center / 100% 100%;
+  background: url("../assets/btn.png?v=12") no-repeat center / 100% 100%;
   image-rendering: pixelated;
   font-family: var(--face-data);
   font-weight: bold;
@@ -1009,7 +1009,7 @@ body {
 
 #next-inning:hover,
 #restart:hover {
-  background-image: url("../assets/btn_hot.png?v=8");
+  background-image: url("../assets/btn_hot.png?v=12");
   color: var(--ink);
   text-shadow: none;
 }

@@ -40,10 +40,10 @@ var CONDITIONS = {
 };
 
 var PHRASES = {
-  contact: function (n) { return "Contact " + n + "."; },
+  contact: function (n) { return n < 0 ? '<span class="bad">Contact ' + n + ".</span>" : "Contact " + n + "."; },
   power:   function (n) { return "Power " + n + "."; },
   stuff:   function (n) { return "Stuff " + n + "."; },
-  glove:   function (n) { return "Glove " + n + "."; },
+  glove:   function (n) { return n < 0 ? '<span class="bad">Glove ' + n + ".</span>" : "Glove " + n + "."; },
   draw:    function (n) { return "Draw " + n + "."; },
   steal:   function ()  { return "Steal a base."; },
   pickoff: function ()  { return "Pick off a runner in scoring position — that's an out."; },
@@ -56,9 +56,18 @@ var PHRASES = {
   foul:    function ()  { return "Foul it off — no strike at two."; },
   advance: function (n) { return "All runners advance " + n + "."; },
   stamina: function (n) { return '<span class="good">+' + n + " stamina.</span>"; },
-  resetSettle: function () { return '<span class="kw">Step Out</span> — he loses Settled In and his rhythm starts over.'; },
-  settleEarly: function () { return '<span class="kw">Settle In</span> early — +1 Stuff for the rest of the half.'; },
-  chokeUp:     function () { return "Your hit this turn is a single."; }
+  // the same engine call means opposite things depending on the side, so
+  // these two need to know which half they're being read in
+  resetSettle: function (n, side) {
+    return side === "o" ? '<span class="good">Step Out</span> — his groove resets.'
+                        : '<span class="bad">You lose your groove.</span>';
+  },
+  settleEarly: function (n, side) {
+    return side === "o" ? '<span class="bad">He digs in</span> — +1 to his groove.'
+                        : '<span class="good">Settle in</span> — +1 to yours.';
+  },
+  chokeUp:     function () { return "Your hit this turn is a single."; },
+  coolOff:     function () { return '<span class="good">Cool him off</span> — he loses a step of his groove.'; }
 };
 
 // A stand-in that records what a card's effect function calls, instead of
@@ -87,6 +96,7 @@ function makeProbe() {
     resetSettle: function () { calls.push(["resetSettle"]); },
     settleEarly: function () { calls.push(["settleEarly"]); },
     chokeUp:     function () { calls.push(["chokeUp"]); },
+    coolOff:     function () { calls.push(["coolOff"]); },
     recomputeSettle: function () {}
   };
   probe.calls = calls;
@@ -116,14 +126,14 @@ function describeSide(cardId, side) {
   });
 
   ["contact", "power", "stuff", "glove", "advance", "steal", "pickoff",
-   "ball", "giveBall", "strike", "tagUp", "dp", "hold", "chokeUp",
+   "ball", "giveBall", "strike", "tagUp", "dp", "hold", "chokeUp", "coolOff",
    "resetSettle", "settleEarly", "draw", "stamina"].forEach(function (key) {
     var m = merged[key];
     if (!m) return;
     if (key === "steal" && m.count > 1) { parts.push("Steal " + m.count + " bases."); return; }
     if (key === "pickoff" && m.count > 1) { parts.push("Pick off " + m.count + " runners — two outs."); return; }
     if (key === "ball" && m.count > 1) { parts.push("Take " + m.count + " balls."); return; }
-    parts.push(PHRASES[key](m.n));
+    parts.push(PHRASES[key](m.n, side));
   });
 
   return parts.join(" ");

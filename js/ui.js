@@ -7,7 +7,7 @@
 // was the first thing a playtester said about the previous version.
 
 var ART = "assets/";
-var ART_V = "?v=8";
+var ART_V = "?v=12";
 
 var STATUS_ICONS = {
   tired:     "status_tired.png",
@@ -110,17 +110,31 @@ var UI = {
       // what he'd get right now, after your Glove
       var damage = ["", "SINGLE", "DOUBLE", "TRIPLE", "HOME RUN"][
         Math.min(4, 1 + Math.max(0, (it.power || 0) - s.gloveMod))];
+      // An out and a strike are NOT simply ranked - an out advances his
+      // runners and a strike doesn't, so which one you want depends on the
+      // board. Label them so it reads as a choice rather than a hierarchy.
+      var runnersOn = s.bases.filter(Boolean).length > 0;
+      var gloved = s.gloveMod >= 1;
       rungs = [
         { key: "HE HITS", need: null, sub: damage, show: floorS - 1 > 0, hit: margin >= 2 },
-        { key: "OUT",    need: floorS - 1, hit: margin === 1 },
-        { key: "STRIKE", need: floorS,     hit: margin <= 0 }
+        { key: gloved ? "OUT" : "FIELDER'S CHOICE",
+          need: floorS - 1,
+          sub: gloved ? (runnersOn ? "clean" : null) : "they move",
+          hit: margin === 1 },
+        { key: s.strikes >= 2 ? "K" : "STRIKE", need: floorS,
+          sub: s.strikes >= 2 ? "out" : "no move", hit: margin <= 0 }
       ];
     }
 
     var power = mine ? s.powerMod : Math.max(0, it.power - s.gloveMod);
     var outcome = this.outcomeOf(margin, power, mine);
 
-    if (mine && it.outOfZone) outcome = { text: "BALL — TAKE IT", cls: "good" };
+    if (mine && it.outOfZone) {
+      outcome = (s.contactMod === 0 && s.powerMod === 0)
+        ? { text: "BALL — TAKE IT", cls: "good" }
+        : this.outcomeOf(BASE_CONTACT + s.contactMod - it.chaseStuff - s.settled,
+                         s.powerMod, true);
+    }
     if (!mine && it.takes)    outcome = { text: "HE TAKES A BALL", cls: "warn" };
     if (mine && it.reactive === "risp") {
       outcome = s.stoleThisTurn
@@ -135,7 +149,20 @@ var UI = {
     if (!mine && it.sacFly)   outcome = { text: "SAC FLY", cls: "bad" };
 
     var ladder = "";
-    var quiet = (mine && (it.outOfZone || it.reactive === "risp")) ||
+    // a ball out of the zone now HAS a ladder - take it, or chase it
+    if (mine && it.outOfZone) {
+      var floorW = it.chaseStuff + s.settled - BASE_CONTACT;
+      var chaseMargin = BASE_CONTACT + s.contactMod - (it.chaseStuff + s.settled);
+      var idle = s.contactMod === 0 && s.powerMod === 0;
+      var pay = ["", "SINGLE", "DOUBLE", "TRIPLE", "HOME RUN"][Math.min(4, 1 + s.powerMod)];
+      rungs = [
+        { key: "TAKE IT", need: 0, sub: "ball", hit: idle },
+        { key: "CHASE",   need: Math.max(0, floorW + 1), sub: "out", hit: !idle && chaseMargin === 1 },
+        { key: pay,       need: Math.max(0, floorW + 2), hit: !idle && chaseMargin >= 2 }
+      ];
+    }
+
+    var quiet = (mine && it.reactive === "risp") ||
                 (!mine && (it.takes || it.steals || it.sacFly));
     if (!quiet) {
       rungs.forEach(function (r) {
@@ -149,9 +176,16 @@ var UI = {
       });
     }
 
-    var settledNote = s.settled > 0
-      ? ' <span class="settled">' + (mine ? "he's settled in +" : "you're settled in +") + s.settled + "</span>"
-      : "";
+    // Say what the groove is and how to break it - this is the whole reason
+    // taking a ball-in-play out can be the right call.
+    var settledNote = "";
+    if (s.settled > 0) {
+      settledNote = ' <span class="settled">' +
+        (mine ? "he's dialled in +" + s.settled + " — contact resets him"
+              : "you're dialled in +" + s.settled) + "</span>";
+    } else if (mine && s.strikes > 0) {
+      settledNote = ' <span class="settled">another strike and he digs in</span>';
+    }
 
     box.innerHTML =
       '<div class="ab-row">' +
@@ -201,7 +235,11 @@ var UI = {
           ? (s.gloveMod > 0
               ? " holding him to " + (net === 0 ? "a single" : (1 + net) + " bases")
               : (raw === 0 ? " he'd get a single" : " he'd take " + (1 + raw) + " bases"))
-          : '<span class="warn"> only matters if he connects</span>'));
+          : margin === 1
+            ? (s.gloveMod > 0
+                ? " you field it cleanly"
+                : '<span class="warn"> no glove — the out lets every runner move up</span>')
+            : '<span class="warn"> only matters if he connects</span>'));
     }
 
     // the counters to the reactive pitches, said out loud - a telegraphed

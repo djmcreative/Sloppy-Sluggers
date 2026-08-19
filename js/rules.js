@@ -56,14 +56,22 @@ var ENERGY_PER_TURN = 3;
 var BASE_CONTACT = 3;   // your Contact at the plate before any cards
 var BASE_STUFF   = 1;   // your Stuff on the mound before any cards
 
-// He settles in against the batter he is facing - +1 to his side every
-// couple of turns, so a long at-bat turns against you and stalling loses.
+// SETTLING IN - and why it is driven by strikes rather than by a timer.
 //
-// Crucially this RESETS when a new batter steps in (see recordOut). It used
-// to be a clock on the whole half, which meant that once he reached +3 no
-// hand could reach a hit and the back half of every inning was dead - the
-// hit rate after the first out was around 1-14%.
-var SETTLE_EVERY = 2;
+// The ladder runs MISS -> BALL IN PLAY -> HIT, but a strike costs a third of
+// an out while a ball in play costs a whole one. Left alone, the cheap rung
+// always wins and the right play is to stand there doing nothing.
+//
+// So the two rungs now trade: every strike settles him +1 and makes every
+// future rung more expensive, while CONTACT of any kind knocks him back to
+// zero. A strikeout does NOT reset him - stalling compounds until you can't
+// reach anything. That is what buys the ball-in-play rung its keep.
+var SETTLE_PER_STRIKE = 1;
+
+// He can only get so locked in. Uncapped, this death-spirals: once he's
+// ahead you can't make contact, and no contact means he never resets, so
+// games ran to endless scoreless extra innings.
+var SETTLE_MAX = 2;
 var OUTS_PER_HALF = 3;
 var DOUBLE_PLAY_CHANCE = 0.30;
 
@@ -75,7 +83,10 @@ var PITCHES = {
   high_heat:      { name: "High Heat",      stuff: 3, weight: 3, tag: "heat", minTurn: 2 },
   painted_corner: { name: "Painted Corner", stuff: 3, weight: 2, tag: "breaking" },
   curveball:      { name: "Curveball",      stuff: 2, weight: 3, tag: "breaking", junk: true },
-  waste_pitch:    { name: "Waste Pitch",    stuff: 0, weight: 2, tag: "junk", outOfZone: true },
+  // Out of the zone. Take it and it's a ball; go after it and you're
+  // chasing, which is why chaseStuff is high - a pitcher's ball is hard to
+  // square up. Either way the turn is now a decision instead of a formality.
+  waste_pitch:    { name: "Waste Pitch",    stuff: 0, weight: 2, tag: "junk", outOfZone: true, chaseStuff: 3 },
   pickoff:        { name: "Pickoff",        stuff: 0, weight: 0, tag: "junk", reactive: "risp" },
   turn_two:       { name: "Turn Two",       stuff: 2, weight: 0, tag: "junk", reactive: "two_on", forcesDP: true }
 };
@@ -125,16 +136,22 @@ var CARDS = {
   uppercut: { name: "Uppercut", cost: 2,
     o: function (G) { G.power(3); }, d: function (G) { G.glove(2); G.stuff(1); } },
 
+  // The old drawback was "take a strike", which cost nothing whenever the
+  // at-bat ended in contact - the count resets anyway. Paying in Contact
+  // instead is a real price, and you watch the HIT rung move away as you
+  // play it.
   sween: { name: "Sween", cost: 1,
-    o: function (G) { G.power(3); G.takeStrike(); },
-    d: function (G) { G.stuff(2); G.giveBall(); } },
+    o: function (G) { G.power(3); },
+    d: function (G) { G.stuff(2); } },   // pure heat, no glove - pair it
 
   golf_swing: { name: "Golf Swing", cost: 1,
-    o: function (G) { G.contact(1); G.power(1); G.takeStrike(); },
-    d: function (G) { G.stuff(1); G.glove(1); G.giveBall(); } },
+    o: function (G) { G.contact(1); G.power(1); },
+    d: function (G) { G.stuff(1); G.glove(1); } },
 
+  // brush him off the plate: cools his groove, which actually survives the
+  // at-bat, unlike a ball on the count
   brushback: { name: "Brushback", cost: 1,
-    o: function (G) { G.contact(1); G.takeBall(); },
+    o: function (G) { G.contact(1); G.coolOff(); },
     d: function (G) { G.stuff(1); G.glove(1); } },
 
   gas: { name: "Gas", cost: 2,
@@ -156,11 +173,11 @@ var CARDS = {
     d: function (G) { G.stuff(1); G.hold(); } },
 
   slide: { name: "Slide", cost: 0,
-    o: function (G) { G.steal(); }, d: function (G) { G.hold(); } },
+    o: function (G) { G.steal(); }, d: function (G) { G.hold(); G.glove(1); } },
 
   good_eye: { name: "Good Eye", cost: 0,
     o: function (G) { G.takeBall(); G.draw(1); },
-    d: function (G) { G.stuff(1); G.draw(1); } },
+    d: function (G) { G.glove(1); G.draw(1); } },
 
   sac_bunt: { name: "Sac Bunt", cost: 0,
     o: function (G) { G.tagUp(); },
@@ -168,15 +185,15 @@ var CARDS = {
 
   small_ball: { name: "Small Ball", cost: 1,
     o: function (G) { G.takeBall(); G.steal(); },
-    d: function (G) { G.stuff(1); G.hold(); } },
+    d: function (G) { G.stuff(1); G.glove(1); } },
 
   dribbler: { name: "Dribbler", cost: 1,
     o: function (G) { G.contact(1); G.tagUp(); },
-    d: function (G) { G.stuff(1); G.armDoublePlay(); } },
+    d: function (G) { G.stuff(1); G.glove(1); } },
 
   hustle: { name: "Hustle", cost: 1,
     o: function (G) { G.contact(1); G.steal(); },
-    d: function (G) { G.stuff(1); G.pickoff(); } },
+    d: function (G) { G.stuff(1); G.glove(1); G.pickoff(); } },
 
   // Answers his specific problem: he cannot win a long at-bat, because the
   // pitcher settles in faster than his Contact can climb. This resets that.
@@ -193,12 +210,12 @@ var CARDS = {
 
   wheels: { name: "Wheels", cost: 2,
     o: function (G) { G.advance(1); G.tagUp(); },
-    d: function (G) { G.armDoublePlay(); G.glove(1); } },
+    d: function (G) { G.armDoublePlay(); G.glove(2); } },
 
   // ---- All-Purpose: value, and the Tag Up identity ----
   punch_it: { name: "Punch It", cost: 1,
     o: function (G) { G.contact(1); G.draw(1); },
-    d: function (G) { G.stuff(1); G.draw(1); } },
+    d: function (G) { G.glove(1); G.draw(1); } },
 
   work_the_count: { name: "Work the Count", cost: 0,
     o: function (G) { G.takeBall(); },
@@ -210,7 +227,7 @@ var CARDS = {
 
   sac_fly_card: { name: "Sac Fly", cost: 1,
     o: function (G) { G.tagUp(); G.contact(1); },
-    d: function (G) { G.armDoublePlay(); } },
+    d: function (G) { G.armDoublePlay(); G.glove(1); } },
 
   opposite_field: { name: "Opposite Field", cost: 1,
     o: function (G) { G.contact(1); G.power(1); },
@@ -239,9 +256,10 @@ var REWARD_CARDS = {
   cage_work:       { name: "Cage Work", cost: 1,
     o: function (G) { G.contact(1); G.power(1); }, d: function (G) { G.stuff(1); G.glove(1); } },
   all_or_nothing:  { name: "All or Nothing", cost: 1,
-    o: function (G) { G.power(3); G.takeStrike(); }, d: function (G) { G.stuff(3); G.giveBall(); } },
+    o: function (G) { G.power(4); G.contact(-1); },
+    d: function (G) { G.stuff(3); G.glove(-1); } },
   elbow_guard:     { name: "Elbow Guard", cost: 0,
-    o: function (G) { G.takeBall(); }, d: function (G) { G.glove(1); } },
+    o: function (G) { G.gainStamina(STAMINA.foulOff); }, d: function (G) { G.glove(1); } },
   second_deck:     { name: "Second Deck", cost: 2,
     o: function (G) { G.power(G.state.strikes >= 2 ? 4 : 1); },
     d: function (G) { G.stuff(G.state.outs >= 2 ? 3 : 1); } },
@@ -321,8 +339,9 @@ var CHARACTERS = {
   // when he connects - that is the archetype. Giving him competitive Contact
   // as well just made him strictly better than everyone.
   dean_kean: { name: "Dean Kean", deck:
-    ["sloppy_single","sloppy_single","foul_off","dig_in","dig_in",
-     "rip_it","rip_it","uppercut","uppercut","sween","golf_swing","brushback"] },
+    ["sloppy_single","sloppy_single","foul_off",
+     "rip_it","rip_it","rip_it","rip_it","uppercut","uppercut",
+     "sween","golf_swing","brushback"] },
 
   // Two Small Ball, not one. His whole engine is walk-then-steal, and with
   // a single copy he simply did not draw it often enough to run it - the
@@ -402,19 +421,11 @@ Game.prototype.hold = function () { this.state.pickoffArmed = true; };
 // Settled is normally computed once at the start of a turn, so these have
 // to recompute it too - otherwise the card has no effect on the at-bat it
 // was played to save, which is the only at-bat that matters.
-Game.prototype.recomputeSettle = function () {
-  var s = this.state;
-  s.settled = Math.max(0, Math.floor((s.turn - s.settleAnchor) / SETTLE_EVERY));
-};
 // step out of the box - his rhythm starts over
-Game.prototype.resetSettle = function () {
-  this.state.settleAnchor = this.state.turn;
-  this.recomputeSettle();
-};
+Game.prototype.resetSettle = function () { this.state.settled = 0; };
 // the mirror: settle in early yourself
 Game.prototype.settleEarly = function () {
-  this.state.settleAnchor -= SETTLE_EVERY;
-  this.recomputeSettle();
+  this.state.settled = Math.min(SETTLE_MAX, this.state.settled + 1);
 };
 // choke up: you'll make contact, but you're not driving it anywhere
 Game.prototype.chokeUp = function () { this.state.capSingle = true; };
@@ -471,8 +482,18 @@ Game.prototype.addStrike = function () {
   var s = this.state;
   if (this.halfOver) return;
   s.strikes++;
+  s.settled = Math.min(SETTLE_MAX, s.settled + SETTLE_PER_STRIKE);   // he finds his groove
   if (s.strikes >= 3) { this.stats.strikeouts++; this.recordOut(); }
 };
+
+// Brushing him back cools the groove without needing contact.
+Game.prototype.coolOff = function () {
+  this.state.settled = Math.max(0, this.state.settled - 1);
+};
+
+// Any contact knocks him out of it. This is what a ball in play buys you
+// that a strike never does, and it's why taking the out can be correct.
+Game.prototype.breakGroove = function () { this.state.settled = 0; };
 
 Game.prototype.takeBall = function () { this.addBall(); };
 Game.prototype.giveBall = function () { this.addBall(); };
@@ -493,9 +514,6 @@ Game.prototype.addBall = function () {
 Game.prototype.recordOut = function () {
   var s = this.state;
   s.outs++; s.strikes = 0; s.balls = 0;
-  // a new batter steps in and he has to find his read again
-  s.settleAnchor = s.turn;
-  s.settled = 0;
   if (this.onOffense() && this.run) {
     this.run.stamina = Math.max(0, this.run.stamina - STAMINA.perOut);
     this.stats.staminaSpent += STAMINA.perOut;
@@ -550,10 +568,6 @@ Game.prototype.startTurn = function () {
 
   this.draw(tierFor(this.run ? this.run.stamina : STAMINA.start).hand);
 
-  // He settles in the longer the half runs. The anchor is what a card can
-  // move: reset it and his rhythm restarts; pull it back and you settle
-  // in early yourself.
-  s.settled = Math.max(0, Math.floor((s.turn - s.settleAnchor) / SETTLE_EVERY));
   s.intent = this.chooseIntent();
 };
 
@@ -563,10 +577,14 @@ Game.prototype.endTurn = function () {
   // all. Paying out per leftover energy looked reasonable but drips on almost
   // every turn, and across a game it out-earns every drain in the system:
   // stamina sat pinned at 100 and the tiers never engaged.
+  // Stamina for taking the pitch only if it actually WAS a ball. Paying you
+  // to stand there against a strike is paying you to do nothing.
   if (s.energy === s.maxEnergy) {
-    this.gainStamina(STAMINA.takePitch);
-    this.stats.takenPitches++;
     s.tookPitch = true;
+    if (this.onOffense() && s.intent && s.intent.outOfZone) {
+      this.gainStamina(STAMINA.takePitch);
+      this.stats.takenPitches++;
+    }
   } else s.tookPitch = false;
 
   this.resolveAtBat();
@@ -626,7 +644,13 @@ Game.prototype.resolveAtBat = function () {
       if (it.outOfZone) this.takeBall(); else this.addStrike();
       return;
     }
-    if (it.outOfZone) { this.takeBall(); return; }
+    if (it.outOfZone) {
+      // committed nothing? you take it. committed anything? you chased.
+      if (s.contactMod === 0 && s.powerMod === 0) { this.takeBall(); return; }
+      this.resolveSwing(BASE_CONTACT + s.contactMod - it.chaseStuff - s.settled,
+                        s.powerMod, false);
+      return;
+    }
     if (s.forceFoul) { if (s.strikes < 2) this.addStrike(); return; }
 
     var stuff = it.stuff + s.settled + (this.mod("tightZone") ? 1 : 0);
@@ -660,6 +684,19 @@ Game.prototype.resolveSwing = function (margin, power, forcesDP, advancesAll) {
   if (margin === 1) {
     this.stats.ballsInPlay++;
     s.strikes = 0; s.balls = 0;
+    this.breakGroove();
+
+    // YOU have to field it. With a Glove committed it's a clean out. Without
+    // one it's a fielder's choice - you still get the out, but everybody
+    // moves up, and no double play. Letting it go through for a hit instead
+    // was stronger but removed the clock: no outs meant the half never
+    // ended and runs piled up 15 at a time.
+    if (!this.onOffense() && s.gloveMod < 1) {
+      this.recordOut();
+      if (this.halfOver) return;
+      this.advance(1);
+      return;
+    }
 
     var canDP = s.bases[0] && s.outs < OUTS_PER_HALF - 1;
     var dp = forcesDP || s.dpArmed || this.rng() < DOUBLE_PLAY_CHANCE;
@@ -685,6 +722,7 @@ Game.prototype.resolveSwing = function (margin, power, forcesDP, advancesAll) {
 
   this.stats.hits++;
   s.strikes = 0; s.balls = 0;
+  this.breakGroove();
   // runners already aboard move up FIRST. Doing this after the batter is
   // placed advanced the batter too, turning every bunt into a double.
   if (advancesAll) this.advance(1);
@@ -712,7 +750,7 @@ if (typeof module !== "undefined" && module.exports) {
     CARDS: CARDS, CHARACTERS: CHARACTERS, PITCHES: PITCHES, SWINGS: SWINGS,
     STAMINA: STAMINA, STAMINA_TIERS: STAMINA_TIERS, OUTS_PER_HALF: OUTS_PER_HALF,
     DOUBLE_PLAY_CHANCE: DOUBLE_PLAY_CHANCE, ENERGY_PER_TURN: ENERGY_PER_TURN,
-    BASE_CONTACT: BASE_CONTACT, BASE_STUFF: BASE_STUFF, SETTLE_EVERY: SETTLE_EVERY,
+    BASE_CONTACT: BASE_CONTACT, BASE_STUFF: BASE_STUFF, SETTLE_PER_STRIKE: SETTLE_PER_STRIKE,
     REWARD_CARDS: REWARD_CARDS, REWARD_POOLS: REWARD_POOLS,
     Game: Game, tierFor: tierFor, shuffle: shuffle
   };
