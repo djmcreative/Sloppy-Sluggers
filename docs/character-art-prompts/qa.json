@@ -1,0 +1,62 @@
+[
+  {
+    "file": "C:\\Users\\dakot\\Documents\\Codex\\2026-09-10\\so-x20\\work\\character-art\\captain-batting.png",
+    "width": 1230,
+    "height": 1278,
+    "format": "Format32bppArgb",
+    "sampleStep": 16,
+    "transparentSamples": 4281,
+    "opaqueSamples": 4,
+    "partialAlphaSamples": 1875
+  },
+  {
+    "file": "C:\\Users\\dakot\\Documents\\Codex\\2026-09-10\\so-x20\\work\\character-art\\captain-portrait.png",
+    "width": 1254,
+    "height": 1254,
+    "format": "Format32bppArgb",
+    "sampleStep": 16,
+    "transparentSamples": 2924,
+    "opaqueSamples": 15,
+    "partialAlphaSamples": 3302
+  },
+  {
+    "file": "C:\\Users\\dakot\\Documents\\Codex\\2026-09-10\\so-x20\\work\\character-art\\dean-batting.png",
+    "width": 1217,
+    "height": 1292,
+    "format": "Format32bppArgb",
+    "sampleStep": 16,
+    "transparentSamples": 4422,
+    "opaqueSamples": 11,
+    "partialAlphaSamples": 1804
+  },
+  {
+    "file": "C:\\Users\\dakot\\Documents\\Codex\\2026-09-10\\so-x20\\work\\character-art\\dean-portrait.png",
+    "width": 1201,
+    "height": 1309,
+    "format": "Format32bppArgb",
+    "sampleStep": 16,
+    "transparentSamples": 2628,
+    "opaqueSamples": 5,
+    "partialAlphaSamples": 3599
+  },
+  {
+    "file": "C:\\Users\\dakot\\Documents\\Codex\\2026-09-10\\so-x20\\work\\character-art\\speedster-batting.png",
+    "width": 1222,
+    "height": 1287,
+    "format": "Format32bppArgb",
+    "sampleStep": 16,
+    "transparentSamples": 4573,
+    "opaqueSamples": 3,
+    "partialAlphaSamples": 1661
+  },
+  {
+    "file": "C:\\Users\\dakot\\Documents\\Codex\\2026-09-10\\so-x20\\work\\character-art\\speedster-portrait.png",
+    "width": 1201,
+    "height": 1309,
+    "format": "Format32bppArgb",
+    "sampleStep": 16,
+    "transparentSamples": 2343,
+    "opaqueSamples": 8,
+    "partialAlphaSamples": 3881
+  }
+]

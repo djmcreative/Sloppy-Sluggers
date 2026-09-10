@@ -1,0 +1,37 @@
+[
+  {
+    "id": "dean-portrait",
+    "prompt": "Use case: background-extraction\nEdit the provided pixel-art character asset: remove the ENTIRE gray-and-white checkerboard background and replace it with actual transparent alpha in the PNG. The checkerboard is unwanted background pixels, not part of the character. Keep the character itself exactly as it is: same likeness, pixel-art clusters and dark stepped outline, same pose and framing, same solid yellow jersey with red trim. Preserve all pixels inside the character silhouette including light gray pants, skin and white eyes/teeth. Output only this one isolated character asset with genuinely transparent background. Do not draw a checkerboard, white background, black background, shadow or any replacement background. Transparency must be encoded in the alpha channel.",
+    "referenced_image_paths": [
+      "C:\\Users\\dakot\\.codex\\generated_images\\01a08d79-1434-7213-9b4c-fc8ddcad7ce9\\exec-63e9a08c-0dbd-4872-ac88-cdbc52c50284.png"
+    ]
+  },
+  {
+    "id": "captain-batting",
+    "prompt": "Use case: background-extraction\nEdit the provided pixel-art character asset: remove the ENTIRE gray-and-white checkerboard background and replace it with actual transparent alpha in the PNG. The checkerboard is unwanted background pixels, not part of the character. Keep the character itself exactly as it is: same likeness, pixel-art clusters and dark stepped outline, same pose and framing, same solid yellow jersey with red trim. Preserve all pixels inside the character silhouette including light gray pants, skin and white eyes/teeth. Output only this one isolated character asset with genuinely transparent background. Do not draw a checkerboard, white background, black background, shadow or any replacement background. Transparency must be encoded in the alpha channel.",
+    "referenced_image_paths": [
+      "C:\\Users\\dakot\\.codex\\generated_images\\01a08d79-1434-7213-9b4c-fc8ddcad7ce9\\exec-68a558f0-e232-4d58-a642-e461e8d77321.png"
+    ]
+  },
+  {
+    "id": "captain-portrait",
+    "prompt": "Use case: background-extraction\nEdit the provided pixel-art character asset: remove the ENTIRE gray-and-white checkerboard background and replace it with actual transparent alpha in the PNG. The checkerboard is unwanted background pixels, not part of the character. Keep the character itself exactly as it is: same likeness, pixel-art clusters and dark stepped outline, same pose and framing, same solid yellow jersey with red trim. Preserve all pixels inside the character silhouette including light gray pants, skin and white eyes/teeth. Output only this one isolated character asset with genuinely transparent background. Do not draw a checkerboard, white background, black background, shadow or any replacement background. Transparency must be encoded in the alpha channel.",
+    "referenced_image_paths": [
+      "C:\\Users\\dakot\\.codex\\generated_images\\01a08d79-1434-7213-9b4c-fc8ddcad7ce9\\exec-a58f41c9-dc47-42dc-ba4a-bc5dec0d8593.png"
+    ]
+  },
+  {
+    "id": "speedster-batting",
+    "prompt": "Use case: background-extraction\nEdit the provided pixel-art character asset: remove the ENTIRE gray-and-white checkerboard background and replace it with actual transparent alpha in the PNG. The checkerboard is unwanted background pixels, not part of the character. Keep the character itself exactly as it is: same likeness, pixel-art clusters and dark stepped outline, same pose and framing, same solid yellow jersey with red trim. Preserve all pixels inside the character silhouette including light gray pants, skin and white eyes/teeth. Output only this one isolated character asset with genuinely transparent background. Do not draw a checkerboard, white background, black background, shadow or any replacement background. Transparency must be encoded in the alpha channel.",
+    "referenced_image_paths": [
+      "C:\\Users\\dakot\\.codex\\generated_images\\01a08d79-1434-7213-9b4c-fc8ddcad7ce9\\exec-5a2fa821-e8dc-4afa-8bfc-78bebdc6a016.png"
+    ]
+  },
+  {
+    "id": "speedster-portrait",
+    "prompt": "Use case: background-extraction\nEdit the provided pixel-art character asset: remove the ENTIRE gray-and-white checkerboard background and replace it with actual transparent alpha in the PNG. The checkerboard is unwanted background pixels, not part of the character. Keep the character itself exactly as it is: same likeness, pixel-art clusters and dark stepped outline, same pose and framing, same solid yellow jersey with red trim. Preserve all pixels inside the character silhouette including light gray pants, skin and white eyes/teeth. Output only this one isolated character asset with genuinely transparent background. Do not draw a checkerboard, white background, black background, shadow or any replacement background. Transparency must be encoded in the alpha channel.",
+    "referenced_image_paths": [
+      "C:\\Users\\dakot\\.codex\\generated_images\\01a08d79-1434-7213-9b4c-fc8ddcad7ce9\\exec-428543b5-9b8c-4b54-af0b-b4ddfba16f7b.png"
+    ]
+  }
+]

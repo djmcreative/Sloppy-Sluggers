@@ -1,0 +1,88 @@
+{
+  "date": "2026-09-10T17:52:18.434Z",
+  "seedStart": 10000,
+  "notes": "One-card lookahead agents on low-risk routes with deterministic upgrade and shopping choices. Not human win rates.",
+  "results": [
+    {
+      "character": "dean",
+      "policy": "tactical",
+      "samples": 300,
+      "wins": 201,
+      "winRate": 67,
+      "averageInning": 8.6,
+      "averageTurns": 32.3
+    },
+    {
+      "character": "dean",
+      "policy": "greedy",
+      "samples": 300,
+      "wins": 0,
+      "winRate": 0,
+      "averageInning": 6.28,
+      "averageTurns": 20.2
+    },
+    {
+      "character": "dean",
+      "policy": "random",
+      "samples": 300,
+      "wins": 70,
+      "winRate": 23.3,
+      "averageInning": 7.62,
+      "averageTurns": 37.1
+    },
+    {
+      "character": "speed",
+      "policy": "tactical",
+      "samples": 300,
+      "wins": 179,
+      "winRate": 59.7,
+      "averageInning": 8.52,
+      "averageTurns": 36
+    },
+    {
+      "character": "speed",
+      "policy": "greedy",
+      "samples": 300,
+      "wins": 0,
+      "winRate": 0,
+      "averageInning": 5.86,
+      "averageTurns": 21.4
+    },
+    {
+      "character": "speed",
+      "policy": "random",
+      "samples": 300,
+      "wins": 50,
+      "winRate": 16.7,
+      "averageInning": 7.64,
+      "averageTurns": 43.2
+    },
+    {
+      "character": "captain",
+      "policy": "tactical",
+      "samples": 300,
+      "wins": 216,
+      "winRate": 72,
+      "averageInning": 8.69,
+      "averageTurns": 42.4
+    },
+    {
+      "character": "captain",
+      "policy": "greedy",
+      "samples": 300,
+      "wins": 0,
+      "winRate": 0,
+      "averageInning": 4.17,
+      "averageTurns": 17.6
+    },
+    {
+      "character": "captain",
+      "policy": "random",
+      "samples": 300,
+      "wins": 98,
+      "winRate": 32.7,
+      "averageInning": 7.98,
+      "averageTurns": 54.8
+    }
+  ]
+}

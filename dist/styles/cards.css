@@ -1,0 +1,249 @@
+.game-card {
+  --card-accent: #aa523e;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  width: 174px;
+  min-width: 0;
+  flex: 0 0 174px;
+  min-height: 249px;
+  background: #f0e5cb;
+  color: #24362c;
+  border: 3px solid #c6b895;
+  border-radius: 7px;
+  text-align: left;
+  padding: 8px;
+  box-shadow:
+    0 5px 0 #081a14,
+    0 7px 18px #0003;
+  transition:
+    transform 0.14s,
+    box-shadow 0.14s;
+  isolation: isolate;
+  font-family: var(--body);
+}
+button.game-card:hover:not(:disabled) {
+  transform: translateY(-12px);
+  box-shadow:
+    0 7px 0 #081a14,
+    0 12px 30px #0005;
+  z-index: 4;
+  border-color: var(--gold);
+}
+.game-card.skill {
+  --card-accent: #386457;
+}
+.game-card.power {
+  --card-accent: #655785;
+}
+.game-card.status {
+  --card-accent: #6b716b;
+  background: #c3c5b9;
+}
+.game-card.upgraded {
+  border-color: #74a46c;
+}
+.card-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 29px;
+}
+.card-cost {
+  display: grid;
+  place-items: center;
+  flex: 0 0 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--card-accent);
+  color: #fff5dd;
+  font-family: var(--mono);
+  font-weight: bold;
+  font-size: 16px;
+}
+.card-name {
+  font-size: 14px;
+  font-weight: 850;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+}
+.card-picture {
+  height: 77px;
+  margin: 8px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: #d8d1b5;
+  border-top: 2px solid var(--card-accent);
+  border-bottom: 2px solid var(--card-accent);
+  overflow: hidden;
+}
+.card-picture img {
+  height: 60px;
+  width: 70px;
+  filter: drop-shadow(2px 3px 0 #1f392b25);
+}
+.card-type {
+  position: absolute;
+  right: 3px;
+  bottom: 2px;
+  font: 9px var(--mono);
+  font-weight: bold;
+  letter-spacing: 0.1em;
+  color: var(--card-accent);
+}
+.card-copy {
+  font-size: 14px;
+  line-height: 1.27;
+  padding: 10px 1px 6px;
+  flex: 1;
+}
+.exhaust {
+  display: block;
+  font-size: 11px;
+  font-weight: bold;
+  text-transform: uppercase;
+  color: #8d513f;
+  margin-top: 5px;
+  letter-spacing: 0.08em;
+}
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #b8b79b;
+  padding-top: 5px;
+  gap: 4px;
+}
+.card-footer span {
+  font: 8px var(--mono);
+  letter-spacing: 0.08em;
+  color: #65715a;
+}
+.card-footer kbd {
+  font: 11px var(--mono);
+  background: #ddd6bb;
+  padding: 0 4px;
+  border: 1px solid #b5b69b;
+}
+.game-card.unavailable {
+  filter: saturate(0.6);
+  opacity: 0.65;
+}
+.hand {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 9px;
+  min-width: 0;
+  flex: 1;
+  padding: 20px 10px 10px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #60795b transparent;
+}
+.hand .game-card {
+  width: clamp(135px, 13.1vw, 174px);
+  flex-basis: clamp(135px, 13.1vw, 174px);
+}
+.hand:has(.game-card:nth-child(7)) {
+  justify-content: flex-start;
+}
+.reward-cards,
+.shop-cards {
+  display: flex;
+  justify-content: center;
+  gap: 25px;
+  margin: 35px 0 30px;
+}
+.reward-cards .game-card,
+.shop-cards .game-card {
+  width: 200px;
+  min-height: 285px;
+  flex-basis: 200px;
+}
+.reward-cards .card-picture,
+.shop-cards .card-picture {
+  height: 95px;
+}
+.reward-cards .card-name,
+.shop-cards .card-name {
+  font-size: 16px;
+}
+.reward-cards .card-copy,
+.shop-cards .card-copy {
+  font-size: 15px;
+}
+.deck-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+  padding-top: 15px;
+}
+.deck-grid .game-card {
+  width: 100%;
+}
+.deck-grid .game-card:hover {
+  transform: translateY(-4px);
+}
+@media (min-width: 1500px) {
+  .hand {
+    gap: 16px;
+  }
+  .hand .game-card {
+    width: 184px;
+    flex-basis: 184px;
+    min-height: 265px;
+  }
+  .card-picture {
+    height: 85px;
+  }
+}
+@media (max-width: 1050px) {
+  .hand {
+    justify-content: flex-start;
+  }
+  .hand .game-card {
+    flex-basis: 151px;
+    width: 151px;
+  }
+  .game-card {
+    min-height: 250px;
+  }
+}
+@media (max-width: 600px) {
+  .reward-cards,
+  .shop-cards {
+    gap: 12px;
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding: 15px 5px;
+  }
+  .reward-cards .game-card,
+  .shop-cards .game-card {
+    width: 180px;
+    flex-basis: 180px;
+  }
+  .hand {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .hand .game-card {
+    width: 160px;
+    flex-basis: 160px;
+  }
+  .deck-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .deck-grid .game-card {
+    padding: 5px;
+  }
+  .card-copy {
+    font-size: 14px;
+  }
+  .card-name {
+    font-size: 13px;
+  }
+}

@@ -1,0 +1,86 @@
+[
+  {
+    "file": "captain-batting.png",
+    "width": 1230,
+    "height": 1278,
+    "bytes": 590822,
+    "transparentPixels": 1088948,
+    "partialAlphaPixels": 480672,
+    "contentBounds": {
+      "minX": 0,
+      "minY": 21,
+      "maxX": 1166,
+      "maxY": 1257
+    }
+  },
+  {
+    "file": "captain-portrait.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 863167,
+    "transparentPixels": 727429,
+    "partialAlphaPixels": 843068,
+    "contentBounds": {
+      "minX": 0,
+      "minY": 21,
+      "maxX": 1253,
+      "maxY": 1253
+    }
+  },
+  {
+    "file": "dean-batting.png",
+    "width": 1217,
+    "height": 1292,
+    "bytes": 577416,
+    "transparentPixels": 1108912,
+    "partialAlphaPixels": 460988,
+    "contentBounds": {
+      "minX": 0,
+      "minY": 21,
+      "maxX": 1115,
+      "maxY": 1261
+    }
+  },
+  {
+    "file": "dean-portrait.png",
+    "width": 1201,
+    "height": 1309,
+    "bytes": 958479,
+    "transparentPixels": 647551,
+    "partialAlphaPixels": 922656,
+    "contentBounds": {
+      "minX": 0,
+      "minY": 15,
+      "maxX": 1200,
+      "maxY": 1308
+    }
+  },
+  {
+    "file": "speedster-batting.png",
+    "width": 1222,
+    "height": 1287,
+    "bytes": 547852,
+    "transparentPixels": 1148429,
+    "partialAlphaPixels": 423314,
+    "contentBounds": {
+      "minX": 0,
+      "minY": 19,
+      "maxX": 1197,
+      "maxY": 1260
+    }
+  },
+  {
+    "file": "speedster-portrait.png",
+    "width": 1201,
+    "height": 1309,
+    "bytes": 1123980,
+    "transparentPixels": 577710,
+    "partialAlphaPixels": 992549,
+    "contentBounds": {
+      "minX": 0,
+      "minY": 0,
+      "maxX": 1200,
+      "maxY": 1308
+    }
+  }
+]

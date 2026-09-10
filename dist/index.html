@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#112b27" />
+    <meta
+      name="description"
+      content="Build your deck. Work the count. Survive nine innings in Sloppy Sluggers, a baseball deckbuilding roguelike."
+    />
+    <title>Sloppy Sluggers · A baseball roguelike</title>
+    <link rel="icon" type="image/png" href="./assets/art/originals/combat%20node.png" />
+    <link rel="stylesheet" href="./styles/base.css" />
+    <link rel="stylesheet" href="./styles/screens.css" />
+    <link rel="stylesheet" href="./styles/cards.css" />
+    <link rel="stylesheet" href="./styles/arcade.css" />
+  </head>
+  <body>
+    <div id="app"><p class="loading">Taking the field…</p></div>
+    <div id="announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+    <div id="toast" role="status"></div>
+    <dialog id="modal" aria-labelledby="modal-title"></dialog>
+    <noscript>This game needs JavaScript enabled to play.</noscript>
+    <script type="module" src="./js/main.js"></script>
+  </body>
+</html>

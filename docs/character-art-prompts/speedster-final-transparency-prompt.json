@@ -1,0 +1,6 @@
+{
+  "prompt": "Remove the checkered background from this pixel-art portrait. Return a transparent PNG cutout with a real alpha channel. Keep the entire character unchanged. Every gray-white checker square behind the hair and shoulders must become invisible transparency, including holes between the hair strands. Do not render any checkerboard. Do not use an opaque background.",
+  "referenced_image_paths": [
+    "C:\\Users\\dakot\\.codex\\generated_images\\01a08d79-1434-7213-9b4c-fc8ddcad7ce9\\exec-d41e96d9-a147-4d97-97bd-2ef61fc7b4fa.png"
+  ]
+}
