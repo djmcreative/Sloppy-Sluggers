@@ -1,5 +1,13 @@
 # Interface update 0.2.1
 
+## Map title and field cleanup 0.2.4
+
+Park titles use a smaller font and wrap within the map sidebar so names such as The Rustyard remain fully visible. Removed the added home plate and pitching rubber overlays; the stadium background and player positions are unchanged.
+
+## Field correction 0.2.3
+
+The stadium fills the battle screen without a capped central rectangle. The artwork, home plate, pitching rubber and player positions share the same full-screen coordinates. Home plate is in the wide left dirt patch, with the batter beside it, opposite the mound. All ground positions mirror together on defense. Narrow windows use a taller scrolling layout and keep the outcome text clear of player labels.
+
 ## Map correction 0.2.2
 
 The first map now expands the entire act into individual game and stop nodes. It uses the same layout before the first game and between games, with all rest sites, training, shops, events, and conditional third games visible from the start. Completed stop choices remain marked across series. A 2–0 series routes around the third game. Only reachable nodes are selectable.

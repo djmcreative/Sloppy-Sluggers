@@ -138,8 +138,6 @@ export function battleScreen(run, actionAnimation = false, sideTransition = fals
       <div class="field-scene">
         <div class="field-world">
           <div class="stadium-art"></div>
-          <div class="ground-plate" aria-label="Home plate"></div>
-          <div class="pitching-rubber" aria-label="Pitching mound"></div>
           <div class="field-player player-unit ${offense ? 'at-plate' : 'at-mound'}">
             ${img(
               offense ? c.sprite : c.pitching,
