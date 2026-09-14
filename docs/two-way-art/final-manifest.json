@@ -1,0 +1,187 @@
+{
+  "mode": "built-in image_gen",
+  "directory": "C:/Users/dakot/Documents/Codex/2026-09-10/so-x20/work/two-way-art",
+  "assets": [
+    {
+      "name": "dean-pitching",
+      "final": "C:/Users/dakot/Documents/Codex/2026-09-10/so-x20/work/two-way-art/dean-pitching.png",
+      "source": "C:\\Users\\dakot\\.codex\\generated_images\\01a09796-5d58-7611-b30b-5ac9c28fcb86\\exec-dcb71d11-3f93-444c-a8ca-9b3114b663b4.png",
+      "prompts": [
+        {
+          "prompt": "Use case: identity-preserve. Input image 1 is the character identity, costume and pixel style reference. Asset type: one full-body baseball roguelike game sprite, PNG with a genuinely transparent alpha background, no colored backdrop, no checkerboard. Chunky pixel illustration with hard stepped edges, thick dark pixel outline, large deliberate square pixel clusters and limited shading palette, readable at 160–240 pixels tall. Single isolated figure with complete feet and all equipment inside frame, generous transparent margin around figure. No lettering, text, number, logo, UI, gradients, blur or painterly smoothness. Change the pose from batting to PITCHING TOWARD SCREEN RIGHT, for placement on the LEFT side of a baseball field. Preserve exactly this recognizable adult man: tousled spiky medium-brown hair, full short brown beard and mustache, strong eyebrows and friendly determined face. Preserve his same body type and outfit: SOLID yellow jersey with ONLY thin red collar and sleeve-edge trim, no stripes, light gray baseball trousers, black belt and red cleats. Create athletic throwing windup: body and face aiming to the right, raised rear throwing hand on left holds a visible white baseball, glove on forward arm toward right, stride leg reaching right. The rightward direction must be unmistakable. No bat. Keep the same recognizable character.",
+          "referenced_image_paths": [
+            "C:/Users/dakot/Documents/Codex/2026-09-10/so-x20/outputs/sloppy-sluggers/dist/assets/art/characters/dean-batting.png"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "captain-pitching",
+      "final": "C:/Users/dakot/Documents/Codex/2026-09-10/so-x20/work/two-way-art/captain-pitching.png",
+      "source": "C:\\Users\\dakot\\.codex\\generated_images\\01a09796-5d58-7611-b30b-5ac9c28fcb86\\exec-eaca82fc-e6be-4308-9600-2f7dc33d178d.png",
+      "prompts": [
+        {
+          "prompt": "Use case: identity-preserve. Input image 1 is the character identity, costume and pixel style reference. Asset type: one full-body baseball roguelike game sprite, PNG with a genuinely transparent alpha background, no colored backdrop, no checkerboard. Chunky pixel illustration with hard stepped edges, thick dark pixel outline, large deliberate square pixel clusters and limited shading palette, readable at 160–240 pixels tall. Single isolated figure with complete feet and all equipment inside frame, generous transparent margin around figure. No lettering, text, number, logo, UI, gradients, blur or painterly smoothness. Change the pose from batting to PITCHING TOWARD SCREEN RIGHT, for placement on the LEFT side of a baseball field. Preserve exactly this recognizable young adult man: short fluffy light-brown hair, clean-shaven face, bright blue eyes, confident smile. Preserve his same body type and outfit: SOLID yellow jersey with ONLY thin red collar and sleeve-edge trim, no stripes, light gray baseball trousers, black belt and red cleats. Create athletic throwing windup: body and face aiming to the right, raised rear throwing hand on left holds a visible white baseball, glove on forward arm toward right, stride leg reaching right. The rightward direction must be unmistakable. No bat. Keep the same recognizable character.",
+          "referenced_image_paths": [
+            "C:/Users/dakot/Documents/Codex/2026-09-10/so-x20/outputs/sloppy-sluggers/dist/assets/art/characters/captain-batting.png"
+          ]
+        },
+        {
+          "prompt": "Use case: background-extraction. Edit target: image 1. Remove the entire baked gray/white checkerboard background and export the identical isolated character with a TRUE TRANSPARENT ALPHA CHANNEL. Every checkerboard background pixel outside and between the character body and equipment must become alpha=0. The checkerboard is an unwanted visible background, not transparency. Keep the character, pose, pixel edges, all colors and complete equipment absolutely unchanged. Output actual transparent PNG RGBA; do not draw a replacement checkerboard, white rectangle or any background. Single sprite only.",
+          "referenced_image_paths": [
+            "C:/Users/dakot/Documents/Codex/2026-09-10/so-x20/work/two-way-art/captain-pitching.png"
+          ],
+          "revision": "alpha-repair"
+        },
+        {
+          "prompt": "Remove the background of this image. Make background transparent. Return a transparent PNG cutout of this exact pixel-art baseball character. Keep the character and equipment unchanged.",
+          "referenced_image_paths": [
+            "C:/Users/dakot/Documents/Codex/2026-09-10/so-x20/work/two-way-art/captain-pitching.png"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "speedster-pitching",
+      "final": "C:/Users/dakot/Documents/Codex/2026-09-10/so-x20/work/two-way-art/speedster-pitching.png",
+      "source": "C:\\Users\\dakot\\.codex\\generated_images\\01a09796-5d58-7611-b30b-5ac9c28fcb86\\exec-2e5c12d6-defc-4fad-bcda-45dbf164c4c2.png",
+      "prompts": [
+        {
+          "prompt": "Use case: identity-preserve. Input image 1 is the character identity, costume and pixel style reference. Asset type: one full-body baseball roguelike game sprite, PNG with a genuinely transparent alpha background, no colored backdrop, no checkerboard. Chunky pixel illustration with hard stepped edges, thick dark pixel outline, large deliberate square pixel clusters and limited shading palette, readable at 160–240 pixels tall. Single isolated figure with complete feet and all equipment inside frame, generous transparent margin around figure. No lettering, text, number, logo, UI, gradients, blur or painterly smoothness. Change the pose from batting to PITCHING TOWARD SCREEN RIGHT, for placement on the LEFT side of a baseball field. Preserve exactly this recognizable lean young adult man: longer swept-back sandy brown hair, clean-shaven narrow face and confident cheeky grin. Preserve his same body type and outfit: SOLID yellow jersey with ONLY thin red collar and sleeve-edge trim, no stripes, light gray baseball trousers, black belt and red cleats. Create athletic throwing windup: body and face aiming to the right, raised rear throwing hand on left holds a visible white baseball, glove on forward arm toward right, stride leg reaching right. The rightward direction must be unmistakable. No bat. Keep the same recognizable character.",
+          "referenced_image_paths": [
+            "C:/Users/dakot/Documents/Codex/2026-09-10/so-x20/outputs/sloppy-sluggers/dist/assets/art/characters/speedster-batting.png"
+          ]
+        },
+        {
+          "prompt": "Use case: background-extraction. Edit target: image 1. Remove the entire baked gray/white checkerboard background and export the identical isolated character with a TRUE TRANSPARENT ALPHA CHANNEL. Every checkerboard background pixel outside and between the character body and equipment must become alpha=0. The checkerboard is an unwanted visible background, not transparency. Keep the character, pose, pixel edges, all colors and complete equipment absolutely unchanged. Output actual transparent PNG RGBA; do not draw a replacement checkerboard, white rectangle or any background. Single sprite only.",
+          "referenced_image_paths": [
+            "C:/Users/dakot/Documents/Codex/2026-09-10/so-x20/work/two-way-art/speedster-pitching.png"
+          ],
+          "revision": "alpha-repair"
+        }
+      ]
+    },
+    {
+      "name": "bruiser-pitching",
+      "final": "C:/Users/dakot/Documents/Codex/2026-09-10/so-x20/work/two-way-art/bruiser-pitching.png",
+      "source": "C:\\Users\\dakot\\.codex\\generated_images\\01a09796-5d58-7611-b30b-5ac9c28fcb86\\exec-0cfe0149-2b7b-4693-b040-ca35c9b686f7.png",
+      "prompts": [
+        {
+          "prompt": "Use case: stylized-concept. Input image 1 is a reference for pixel rendering style and baseball sprite proportions ONLY. Invent a NEW evil enemy character with absolutely different face and costume. Asset type: one full-body baseball roguelike game sprite, PNG with a genuinely transparent alpha background, no colored backdrop, no checkerboard. Chunky pixel illustration with hard stepped edges, thick dark pixel outline, large deliberate square pixel clusters and limited shading palette, readable at 160–240 pixels tall. Single isolated figure with complete feet and all equipment inside frame, generous transparent margin around figure. No lettering, text, number, logo, UI, gradients, blur or painterly smoothness. Subject: Scrapyard Bruiser: stocky broad rust-armored masked brute, grim battered dark iron catcher mask with narrow amber eye slits, dented rust-orange shoulder and chest protection, dark brown leather belts, charcoal baseball pants, huge cleated boots. Heavy silhouette with large fists; clearly a villain made from scavenged baseball catcher gear. Pose: athletic PITCHING LEFTWARD, because enemy stands at screen RIGHT facing a hero on left. Face, eyes and nose directed left, baseball held in rear throwing hand toward upper right, forward glove arm reaches toward left, leading leg steps to left. Show visible white baseball and worn baseball glove; no bat. Match the reference chunky pixel-art rendering, but this must look like a threatening baseball BAD GUY. Preserve clean silhouette and transparent space.",
+          "referenced_image_paths": [
+            "C:/Users/dakot/Documents/Codex/2026-09-10/so-x20/outputs/sloppy-sluggers/dist/assets/art/characters/dean-batting.png"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "bruiser-batting",
+      "final": "C:/Users/dakot/Documents/Codex/2026-09-10/so-x20/work/two-way-art/bruiser-batting.png",
+      "source": "C:\\Users\\dakot\\.codex\\generated_images\\01a09796-5d58-7611-b30b-5ac9c28fcb86\\exec-938eea0e-c066-4bae-a15f-a7e76a9d85b4.png",
+      "prompts": [
+        {
+          "prompt": "Use case: identity-preserve. Input image 1 is the EXACT enemy identity and pixel style to preserve. Asset type: one full-body baseball roguelike game sprite, PNG with a genuinely transparent alpha background, no colored backdrop, no checkerboard. Chunky pixel illustration with hard stepped edges, thick dark pixel outline, large deliberate square pixel clusters and limited shading palette, readable at 160–240 pixels tall. Single isolated figure with complete feet and all equipment inside frame, generous transparent margin around figure. No lettering, text, number, logo, UI, gradients, blur or painterly smoothness. Preserve the exact same face, mask or hood, eyes, head shape, costume, colors, armor, body proportions, and shoes from reference. Subject identity: Scrapyard Bruiser: stocky broad rust-armored masked brute, grim battered dark iron catcher mask with narrow amber eye slits, dented rust-orange shoulder and chest protection, dark brown leather belts, charcoal baseball pants, huge cleated boots. Heavy silhouette with large fists; clearly a villain made from scavenged baseball catcher gear. Change ONLY the pose and held equipment: this same villain now BATTING and facing screen LEFT, standing on the RIGHT side of a baseball arena awaiting a pitch from screen left. Both hands grip a thick wooden baseball bat above rear shoulder on upper RIGHT, face looking left, torso twisted toward left, feet wide in athletic batting stance. No glove and no held ball. Complete bat inside frame. Do not copy any checkerboard background from reference: output genuinely transparent RGBA PNG with transparent pixels surrounding character. No backdrop.",
+          "referenced_image_paths": [
+            "C:/Users/dakot/Documents/Codex/2026-09-10/so-x20/work/two-way-art/bruiser-pitching.png"
+          ]
+        },
+        {
+          "prompt": "Remove the background of this image. Make background transparent. Return a transparent PNG cutout of this exact pixel-art baseball character. Keep the character and equipment unchanged.",
+          "referenced_image_paths": [
+            "C:/Users/dakot/Documents/Codex/2026-09-10/so-x20/work/two-way-art/bruiser-batting.png"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "phantom-pitching",
+      "final": "C:/Users/dakot/Documents/Codex/2026-09-10/so-x20/work/two-way-art/phantom-pitching.png",
+      "source": "C:\\Users\\dakot\\.codex\\generated_images\\01a09796-5d58-7611-b30b-5ac9c28fcb86\\exec-65517a36-b837-4f08-a021-78bbfd30a933.png",
+      "prompts": [
+        {
+          "prompt": "Use case: stylized-concept. Input image 1 is a reference for pixel rendering style and baseball sprite proportions ONLY. Invent a NEW evil enemy character with absolutely different face and costume. Asset type: one full-body baseball roguelike game sprite, PNG with a genuinely transparent alpha background, no colored backdrop, no checkerboard. Chunky pixel illustration with hard stepped edges, thick dark pixel outline, large deliberate square pixel clusters and limited shading palette, readable at 160–240 pixels tall. Single isolated figure with complete feet and all equipment inside frame, generous transparent margin around figure. No lettering, text, number, logo, UI, gradients, blur or painterly smoothness. Subject: Nightshift Phantom: sinister lanky spectral hooded baseball outlaw, face shadow-black beneath deep navy tattered hood with two narrow glowing teal eyes and a wicked teal skeletal grin; layered dark-blue ragged baseball coat, battered catcher chest protector, torn charcoal baseball pants and dark cleated boots, angular teal spectral accents around hands. Clear complete body including both legs and boots; not a floating bedsheet. Pose: athletic PITCHING LEFTWARD, because enemy stands at screen RIGHT facing a hero on left. Face, eyes and nose directed left, baseball held in rear throwing hand toward upper right, forward glove arm reaches toward left, leading leg steps to left. Show visible white baseball and worn baseball glove; no bat. Match the reference chunky pixel-art rendering, but this must look like a threatening baseball BAD GUY. Preserve clean silhouette and transparent space.",
+          "referenced_image_paths": [
+            "C:/Users/dakot/Documents/Codex/2026-09-10/so-x20/outputs/sloppy-sluggers/dist/assets/art/characters/dean-batting.png"
+          ]
+        },
+        {
+          "prompt": "Use case: background-extraction. Edit target: image 1. Remove the entire baked gray/white checkerboard background and export the identical isolated character with a TRUE TRANSPARENT ALPHA CHANNEL. Every checkerboard background pixel outside and between the character body and equipment must become alpha=0. The checkerboard is an unwanted visible background, not transparency. Keep the character, pose, pixel edges, all colors and complete equipment absolutely unchanged. Output actual transparent PNG RGBA; do not draw a replacement checkerboard, white rectangle or any background. Single sprite only.",
+          "referenced_image_paths": [
+            "C:/Users/dakot/Documents/Codex/2026-09-10/so-x20/work/two-way-art/phantom-pitching.png"
+          ],
+          "revision": "alpha-repair"
+        },
+        {
+          "prompt": "Remove the background of this image. Make background transparent. Return a transparent PNG cutout of this exact pixel-art baseball character. Keep the character and equipment unchanged.",
+          "referenced_image_paths": [
+            "C:/Users/dakot/Documents/Codex/2026-09-10/so-x20/work/two-way-art/phantom-pitching.png"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "phantom-batting",
+      "final": "C:/Users/dakot/Documents/Codex/2026-09-10/so-x20/work/two-way-art/phantom-batting.png",
+      "source": "C:\\Users\\dakot\\.codex\\generated_images\\01a09796-5d58-7611-b30b-5ac9c28fcb86\\exec-0e1b2ba0-af82-4695-9954-ef7ba9b1cd62.png",
+      "prompts": [
+        {
+          "prompt": "Use case: identity-preserve. Input image 1 is the EXACT enemy identity and pixel style to preserve. Asset type: one full-body baseball roguelike game sprite, PNG with a genuinely transparent alpha background, no colored backdrop, no checkerboard. Chunky pixel illustration with hard stepped edges, thick dark pixel outline, large deliberate square pixel clusters and limited shading palette, readable at 160–240 pixels tall. Single isolated figure with complete feet and all equipment inside frame, generous transparent margin around figure. No lettering, text, number, logo, UI, gradients, blur or painterly smoothness. Preserve the exact same face, mask or hood, eyes, head shape, costume, colors, armor, body proportions, and shoes from reference. Subject identity: Nightshift Phantom: sinister lanky spectral hooded baseball outlaw, face shadow-black beneath deep navy tattered hood with two narrow glowing teal eyes and a wicked teal skeletal grin; layered dark-blue ragged baseball coat, battered catcher chest protector, torn charcoal baseball pants and dark cleated boots, angular teal spectral accents around hands. Clear complete body including both legs and boots; not a floating bedsheet. Change ONLY the pose and held equipment: this same villain now BATTING and facing screen LEFT, standing on the RIGHT side of a baseball arena awaiting a pitch from screen left. Both hands grip a thick wooden baseball bat above rear shoulder on upper RIGHT, face looking left, torso twisted toward left, feet wide in athletic batting stance. No glove and no held ball. Complete bat inside frame. Do not copy any checkerboard background from reference: output genuinely transparent RGBA PNG with transparent pixels surrounding character. No backdrop.",
+          "referenced_image_paths": [
+            "C:/Users/dakot/Documents/Codex/2026-09-10/so-x20/work/two-way-art/phantom-pitching.png"
+          ]
+        },
+        {
+          "prompt": "Remove the background of this image. Make background transparent. Return a transparent PNG cutout of this exact pixel-art baseball character. Keep the character and equipment unchanged.",
+          "referenced_image_paths": [
+            "C:/Users/dakot/Documents/Codex/2026-09-10/so-x20/work/two-way-art/phantom-batting.png"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "inferno-pitching",
+      "final": "C:/Users/dakot/Documents/Codex/2026-09-10/so-x20/work/two-way-art/inferno-pitching.png",
+      "source": "C:\\Users\\dakot\\.codex\\generated_images\\01a09796-5d58-7611-b30b-5ac9c28fcb86\\exec-088ed7b6-def7-4c3a-b0dc-e67c29b91867.png",
+      "prompts": [
+        {
+          "prompt": "Use case: stylized-concept. Input image 1 is a reference for pixel rendering style and baseball sprite proportions ONLY. Invent a NEW evil enemy character with absolutely different face and costume. Asset type: one full-body baseball roguelike game sprite, PNG with a genuinely transparent alpha background, no colored backdrop, no checkerboard. Chunky pixel illustration with hard stepped edges, thick dark pixel outline, large deliberate square pixel clusters and limited shading palette, readable at 160–240 pixels tall. Single isolated figure with complete feet and all equipment inside frame, generous transparent margin around figure. No lettering, text, number, logo, UI, gradients, blur or painterly smoothness. Subject: Inferno King: powerful charcoal-and-crimson horned umpire-like baseball demon, black angular face under dark umpire mask and peaked umpire cap with two small swept red horns, glowing ember eyes and evil toothy grin; dark charcoal umpire chest armor edged crimson, red sleeves, charcoal baseball trousers, crimson knee guards and massive black cleated boots, short jagged demon tail. Clearly baseball-themed evil final boss, not a regular jersey dude. Pose: athletic PITCHING LEFTWARD, because enemy stands at screen RIGHT facing a hero on left. Face, eyes and nose directed left, baseball held in rear throwing hand toward upper right, forward glove arm reaches toward left, leading leg steps to left. Show visible white baseball and worn baseball glove; no bat. Match the reference chunky pixel-art rendering, but this must look like a threatening baseball BAD GUY. Preserve clean silhouette and transparent space.",
+          "referenced_image_paths": [
+            "C:/Users/dakot/Documents/Codex/2026-09-10/so-x20/outputs/sloppy-sluggers/dist/assets/art/characters/dean-batting.png"
+          ]
+        },
+        {
+          "prompt": "Use case: background-extraction. Edit target: image 1. Remove the entire baked gray/white checkerboard background and export the identical isolated character with a TRUE TRANSPARENT ALPHA CHANNEL. Every checkerboard background pixel outside and between the character body and equipment must become alpha=0. The checkerboard is an unwanted visible background, not transparency. Keep the character, pose, pixel edges, all colors and complete equipment absolutely unchanged. Output actual transparent PNG RGBA; do not draw a replacement checkerboard, white rectangle or any background. Single sprite only.",
+          "referenced_image_paths": [
+            "C:/Users/dakot/Documents/Codex/2026-09-10/so-x20/work/two-way-art/inferno-pitching.png"
+          ],
+          "revision": "alpha-repair"
+        }
+      ]
+    },
+    {
+      "name": "inferno-batting",
+      "final": "C:/Users/dakot/Documents/Codex/2026-09-10/so-x20/work/two-way-art/inferno-batting.png",
+      "source": "C:\\Users\\dakot\\.codex\\generated_images\\01a09796-5d58-7611-b30b-5ac9c28fcb86\\exec-13166f09-6b15-42bd-b05c-22dbb6528a9f.png",
+      "prompts": [
+        {
+          "prompt": "Use case: identity-preserve. Input image 1 is the EXACT enemy identity and pixel style to preserve. Asset type: one full-body baseball roguelike game sprite, PNG with a genuinely transparent alpha background, no colored backdrop, no checkerboard. Chunky pixel illustration with hard stepped edges, thick dark pixel outline, large deliberate square pixel clusters and limited shading palette, readable at 160–240 pixels tall. Single isolated figure with complete feet and all equipment inside frame, generous transparent margin around figure. No lettering, text, number, logo, UI, gradients, blur or painterly smoothness. Preserve the exact same face, mask or hood, eyes, head shape, costume, colors, armor, body proportions, and shoes from reference. Subject identity: Inferno King: powerful charcoal-and-crimson horned umpire-like baseball demon, black angular face under dark umpire mask and peaked umpire cap with two small swept red horns, glowing ember eyes and evil toothy grin; dark charcoal umpire chest armor edged crimson, red sleeves, charcoal baseball trousers, crimson knee guards and massive black cleated boots, short jagged demon tail. Clearly baseball-themed evil final boss, not a regular jersey dude. Change ONLY the pose and held equipment: this same villain now BATTING and facing screen LEFT, standing on the RIGHT side of a baseball arena awaiting a pitch from screen left. Both hands grip a thick wooden baseball bat above rear shoulder on upper RIGHT, face looking left, torso twisted toward left, feet wide in athletic batting stance. No glove and no held ball. Complete bat inside frame. Do not copy any checkerboard background from reference: output genuinely transparent RGBA PNG with transparent pixels surrounding character. No backdrop.",
+          "referenced_image_paths": [
+            "C:/Users/dakot/Documents/Codex/2026-09-10/so-x20/work/two-way-art/inferno-pitching.png"
+          ]
+        },
+        {
+          "prompt": "Remove the background of this image. Make background transparent. Return a transparent PNG cutout of this exact pixel-art baseball character. Keep the character and equipment unchanged.",
+          "referenced_image_paths": [
+            "C:/Users/dakot/Documents/Codex/2026-09-10/so-x20/work/two-way-art/inferno-batting.png"
+          ]
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "Full-resolution generated exports are preserved without procedural editing.",
+    "Background extraction retries were performed with built-in image_gen after identifying baked checkerboards.",
+    "RGBA content has mainly alpha 253–254 and transparent background alpha 0; native generated alpha retained.",
+    "Read alpha-evidence.json for dimensions, counts, and alpha bounds."
+  ]
+}

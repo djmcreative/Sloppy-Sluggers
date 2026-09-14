@@ -1,0 +1,397 @@
+/* Two-way matches retain the stadium scene and physical cards. */
+.two-way-battle {
+  min-height: 840px;
+}
+.two-way-battle .match-heading {
+  top: 8px;
+}
+.match-scoreboard {
+  top: 42px;
+  gap: 20px;
+}
+.line-score {
+  border-collapse: collapse;
+  font-size: 17px;
+  min-width: 290px;
+}
+.line-score caption {
+  color: #ffe49e;
+  font-size: 16px;
+  padding-bottom: 7px;
+}
+.line-score th,
+.line-score td {
+  padding: 3px 9px;
+  text-align: center;
+}
+.line-score th:first-child {
+  text-align: left;
+  font-size: 14px;
+}
+.line-score thead {
+  color: #bbba9a;
+  font-size: 13px;
+}
+.line-score .total-score {
+  color: #ffe080;
+  font-size: 24px;
+  border-left: 1px solid #73785d;
+}
+.line-score .batting-row {
+  background: #eaca6a17;
+}
+.match-scoreboard .count-board {
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 0 0 16px;
+}
+.side-indicator {
+  color: #ffd274;
+  font-size: 17px;
+}
+.on-defense .side-indicator {
+  color: #8ce2ed;
+}
+.match-scoreboard small {
+  color: #b6ccc3;
+  font-size: 13px;
+}
+.two-way-battle .batter-unit {
+  bottom: 415px;
+  left: 12%;
+}
+.two-way-battle .pitcher-unit {
+  bottom: 415px;
+  right: 12%;
+}
+.two-way-battle .batter-sprite,
+.two-way-battle .pitcher-sprite {
+  height: 205px;
+  width: 220px;
+  object-fit: contain;
+}
+.two-way-battle .unit-label {
+  max-width: 285px;
+}
+.two-way-battle .unit-label strong {
+  font-size: 22px;
+}
+.two-way-battle .unit-label span {
+  font-size: 13px;
+}
+.two-way-battle .base-board {
+  bottom: 445px;
+}
+.two-way-battle .battle-mid {
+  bottom: 365px;
+  left: 9%;
+  right: 9%;
+  justify-content: center;
+}
+.two-way-battle .battle-mid .text-button {
+  display: block;
+  font-size: 14px;
+}
+.two-way-battle .hand-area {
+  height: 325px;
+  bottom: 34px;
+}
+.two-way-battle .hand {
+  height: 320px;
+}
+.two-way-battle .hand .game-card {
+  width: 182px;
+  min-height: 285px;
+  max-height: none;
+}
+.card-face-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #734e37;
+  letter-spacing: 0.06em;
+  padding: 0 0 5px;
+}
+.skill .card-face-label {
+  color: #315e68;
+}
+.two-sided .card-heading {
+  padding-left: 25px;
+  min-height: 36px;
+}
+.two-sided .card-cost {
+  top: 22px;
+  left: 6px;
+  width: 27px;
+  height: 27px;
+  font-size: 22px;
+}
+.two-sided .card-name {
+  font-size: 19px;
+  line-height: 1.05;
+}
+.two-sided .card-picture {
+  height: 57px;
+  margin-top: 5px;
+}
+.two-sided .card-picture img {
+  width: 50px;
+  height: 50px;
+}
+.two-sided .card-copy {
+  font-size: 16px;
+  line-height: 1.15;
+  padding: 9px 1px;
+}
+.card-reverse {
+  border-top: 2px dashed #867757;
+  background: #d0d9cf;
+  padding: 8px 7px;
+  margin: 0 -2px 6px;
+}
+.skill .card-reverse {
+  background: #e7c6a4;
+}
+.card-reverse > span {
+  display: block;
+  font-size: 12px;
+  color: #334c53;
+}
+.card-reverse > strong {
+  display: block;
+  font-size: 18px;
+  color: #253d42;
+  margin: 3px 0;
+  line-height: 1.05;
+}
+.card-reverse > p {
+  margin: 3px 0 0;
+  font-size: 15px;
+  line-height: 1.2;
+}
+.hand .card-reverse {
+  padding: 5px;
+}
+.hand .card-reverse > p {
+  display: none;
+}
+.hand .card-reverse strong {
+  font-size: 15px;
+}
+.hand .card-footer span {
+  font-size: 10px;
+}
+.reward-cards .two-sided,
+.shop-cards .two-sided {
+  min-height: 415px;
+  width: 228px;
+  flex-basis: 228px;
+}
+.deck-grid .two-sided {
+  min-height: 360px;
+}
+.half-inning-break {
+  text-align: center;
+  color: #ffedc6;
+  padding: 32px 15px;
+  border: 3px solid #b5a074;
+  background: #152b3af2;
+  box-shadow: 0 6px #070f18;
+}
+.half-inning-break > span {
+  font-size: 16px;
+  color: #8cdee2;
+}
+.half-inning-break h2 {
+  font-size: 38px;
+  margin: 8px 0;
+}
+.half-inning-break p {
+  font-size: 18px;
+  margin: 10px 0 16px;
+}
+.pairing-note {
+  font-size: 17px;
+  color: #ecd59d;
+}
+.dugout-choices {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 850px;
+}
+.showdown-rule {
+  position: absolute;
+  bottom: 331px;
+  left: 10%;
+  right: 10%;
+  text-align: center;
+  font-size: 14px;
+  color: #ffe2a7;
+}
+.two-way-battle .battle-footer {
+  flex-wrap: wrap;
+  gap: 5px;
+  font-size: 13px;
+}
+.two-way-battle .battle-footer p {
+  max-width: 350px;
+}
+.journey-equipment img {
+  object-fit: contain;
+}
+@media (max-width: 1050px) {
+  .two-way-battle .batter-unit {
+    left: 5%;
+  }
+  .two-way-battle .pitcher-unit {
+    right: 5%;
+  }
+  .two-way-battle .hand {
+    left: 14%;
+    right: 14%;
+  }
+  .two-way-battle .hand .game-card {
+    width: 168px;
+  }
+  .two-way-battle .battle-mid {
+    left: 3%;
+    right: 3%;
+  }
+  .two-way-battle .unit-label strong {
+    font-size: 19px;
+  }
+}
+@media (max-width: 700px) {
+  .two-way-battle {
+    height: 990px;
+    min-height: 990px;
+  }
+  .match-scoreboard {
+    top: 45px;
+    padding: 7px;
+    gap: 8px;
+    width: calc(100% - 20px);
+    max-width: 440px;
+  }
+  .line-score {
+    min-width: 0;
+    flex: 1;
+    font-size: 15px;
+  }
+  .line-score th,
+  .line-score td {
+    padding: 3px 5px;
+  }
+  .line-score th:first-child {
+    font-size: 12px;
+  }
+  .line-score caption {
+    font-size: 14px;
+  }
+  .match-scoreboard .count-board {
+    padding-left: 8px;
+  }
+  .side-indicator {
+    font-size: 14px;
+  }
+  .two-way-battle .batter-unit,
+  .two-way-battle .pitcher-unit {
+    bottom: 535px;
+  }
+  .two-way-battle .batter-sprite,
+  .two-way-battle .pitcher-sprite {
+    width: 145px;
+    height: 160px;
+  }
+  .two-way-battle .batter-unit {
+    left: 0;
+  }
+  .two-way-battle .pitcher-unit {
+    right: 0;
+  }
+  .two-way-battle .unit-label {
+    max-width: 150px;
+  }
+  .two-way-battle .unit-label strong {
+    font-size: 16px;
+  }
+  .two-way-battle .base-board {
+    bottom: 555px;
+    transform: translateX(-50%) scale(0.68);
+  }
+  .two-way-battle .pitch-intent {
+    min-width: 0;
+    max-width: 175px;
+  }
+  .two-way-battle .pitch-intent small {
+    font-size: 13px;
+  }
+  .two-way-battle .battle-mid {
+    bottom: 465px;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .two-way-battle .defense-status {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .two-way-battle .defense-status .pitch-outcome {
+    font-size: 14px;
+  }
+  .two-way-battle .hand-area {
+    height: 420px;
+    bottom: 28px;
+  }
+  .two-way-battle .hand {
+    height: 340px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    overflow: auto;
+    padding: 10px 12px;
+    gap: 12px;
+  }
+  .two-way-battle .hand .game-card {
+    position: relative;
+    left: auto;
+    bottom: auto;
+    transform: none;
+    width: 174px;
+    flex: 0 0 174px;
+    min-height: 305px;
+  }
+  .two-way-battle .hand .game-card:hover:not(:disabled),
+  .two-way-battle .hand .game-card:focus-visible {
+    transform: translateY(-3px);
+  }
+  .two-way-battle .energy-panel {
+    left: 12px;
+    top: 0;
+    bottom: auto;
+  }
+  .two-way-battle .turn-panel {
+    right: 12px;
+    top: 0;
+    bottom: auto;
+  }
+  .two-way-battle .half-inning-break {
+    flex: 1;
+    min-width: 270px;
+    padding: 22px 12px;
+  }
+  .two-way-battle .half-inning-break h2 {
+    font-size: 28px;
+  }
+  .two-way-battle .battle-footer p {
+    display: none;
+  }
+  .showdown-rule {
+    bottom: 436px;
+    left: 8px;
+    right: 8px;
+    font-size: 12px;
+  }
+  .dugout-choices {
+    grid-template-columns: 1fr;
+  }
+}

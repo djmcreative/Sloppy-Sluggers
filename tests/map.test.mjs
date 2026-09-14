@@ -1,74 +1,126 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { generateMap, migrateMap, MAP_VERSION } from '../dist/js/engine/map.js';
-import { createRun, enterNode, reachable } from '../dist/js/engine/run.js';
-
-test('Two hundred seeded maps branch, merge, and have no unreachable nodes or dead ends', () => {
-  for (let seed = 1; seed <= 200; seed++) {
-    const map = generateMap(seed),
-      nodes = map.flat();
-    assert.equal(map.length, 9);
-    assert.equal(map[8].length, 1);
-    assert.ok(new Set(map.slice(0, 8).map((row) => row.length)).size >= 3);
-    const incoming = new Map(nodes.map((n) => [n.id, 0]));
-    let splits = 0;
-    for (let row = 0; row < 8; row++)
-      for (const node of map[row]) {
-        assert.ok(node.next.length > 0);
-        if (node.next.length > 1) splits++;
-        assert.ok(node.next.some((id) => !map[row + 1].find((n) => n.id === id).elite));
-        for (const id of node.next) {
-          assert.ok(map[row + 1].some((n) => n.id === id));
-          incoming.set(id, incoming.get(id) + 1);
-        }
-      }
-    assert.ok(splits >= 2);
-    assert.ok([...incoming.values()].filter((n) => n > 1).length >= 2);
-    for (const node of nodes) {
-      if (node.inning > 1) assert.ok(incoming.get(node.id) > 0);
-      assert.ok(node.x >= 50 && node.x <= 630);
-    }
-    function paths(node) {
-      return node.inning === 9
-        ? 1
-        : node.next.reduce((sum, id) => sum + paths(nodes.find((n) => n.id === id)), 0);
-    }
-    assert.ok(map[0].reduce((sum, n) => sum + paths(n), 0) > 3);
+import * as R from '../dist/js/engine/run.js';
+import { generateMap } from '../dist/js/engine/map.js';
+const begin = () => {
+  const r = R.createRun('captain', 1);
+  R.enterNode(r, r.map[0][0].id);
+  return r;
+};
+const finish = (r, won) => {
+  r.battle.score = { player: won ? 3 : 1, enemy: won ? 1 : 3 };
+  r.battle.status = won ? 'won' : 'lost';
+  R.finishBattle(r);
+};
+const recover = (r) => {
+  R.chooseReward(r, 'skip');
+  R.chooseStop(r, 'rest');
+  R.takeRest(r, 'rest');
+  R.nextGame(r);
+};
+test('One loss grants a comeback game against the same opponent; a second loss ends the run', () => {
+  const r = begin(),
+    id = r.opponent.id;
+  finish(r, false);
+  assert.equal(r.phase, 'reward');
+  assert.equal(r.series.losses, 1);
+  assert.equal(R.finishBattle(r), false);
+  recover(r);
+  assert.equal(r.phase, 'battle');
+  assert.equal(r.battle.game, 2);
+  assert.equal(r.battle.home, true);
+  assert.equal(r.opponent.id, id);
+  finish(r, false);
+  assert.equal(r.phase, 'lost');
+  assert.equal(r.stage, 1);
+});
+test('Win-loss-win takes a series and resets its record only when advancing', () => {
+  const r = begin();
+  finish(r, true);
+  recover(r);
+  finish(r, false);
+  recover(r);
+  assert.equal(r.battle.game, 3);
+  assert.equal(r.battle.home, false);
+  finish(r, true);
+  assert.deepEqual(r.series, { wins: 2, losses: 1 });
+  recover(r);
+  assert.equal(r.stage, 2);
+  assert.equal(r.phase, 'map');
+  assert.deepEqual(r.series, { wins: 0, losses: 0 });
+});
+test('Nine best-of-three series progress through three acts to victory', () => {
+  const r = R.createRun('dean', 44);
+  for (let series = 0; series < 9; series++) {
+    const node = r.map[r.stage - 1].find((n) => R.reachable(r, n));
+    assert.ok(node);
+    R.enterNode(r, node.id);
+    finish(r, true);
+    recover(r);
+    finish(r, true);
+    if (series < 8) recover(r);
   }
+  assert.equal(r.phase, 'won');
+  assert.equal(r.completed, 9);
+  assert.equal(r.gamesWon, 18);
+  assert.equal(r.act, 3);
+});
+test('Seeded maps split and merge, and have reachable regular alternatives before the boss', () => {
+  for (let seed = 0; seed < 100; seed++)
+    for (let act = 1; act <= 3; act++) {
+      const map = generateMap(seed, act);
+      assert.equal(map.length, 3);
+      assert.equal(map[2].length, 1);
+      for (let row = 0; row < 2; row++)
+        for (const n of map[row]) {
+          assert.ok(n.next.length);
+          assert.ok(n.next.every((id) => map[row + 1].some((x) => x.id === id)));
+        }
+      for (let row = 1; row < 3; row++)
+        for (const n of map[row]) assert.ok(map[row - 1].some((x) => x.next.includes(n.id)));
+      assert.deepEqual(generateMap(seed, act), map);
+      assert.ok(map[0].some((n) => !n.elite));
+    }
+});
+test('Only connected nodes can be selected, and rewards/stops cannot be taken twice', () => {
+  const r = begin();
+  finish(r, true);
+  const reward = r.rewards[0];
+  const size = r.deck.length;
+  R.chooseReward(r, reward.uid);
+  assert.equal(R.chooseReward(r, reward.uid), false);
+  assert.equal(r.deck.length, size + 1);
+  assert.equal(R.chooseStop(r, 'shop'), true);
+  assert.equal(R.chooseStop(r, 'rest'), false);
+  r.cash = 100;
+  const item = r.shop.cards[0];
+  R.buy(r, 'card', item.card.uid);
+  const money = r.cash;
+  assert.equal(R.buy(r, 'card', item.card.uid), false);
+  assert.equal(r.cash, money);
 });
 
-test('Explicit edges control selection; screen adjacency cannot unlock an unconnected stop', () => {
-  const run = createRun('dean', 7);
-  enterNode(run, run.map[0][0].id);
-  const previous = run.map[0][0];
-  run.phase = 'map';
-  run.inning = 2;
-  for (const next of run.map[1])
-    assert.equal(reachable(run, next), previous.next.includes(next.id));
-  const disconnected = run.map[1].find((n) => !previous.next.includes(n.id));
-  assert.ok(disconnected);
-  assert.equal(enterNode(run, disconnected.id), false);
-});
-
-test('Map migration preserves current combat, deck, random stream, and chosen encounters', () => {
-  const run = createRun('speed', 33);
-  enterNode(run, '1-0');
-  delete run.mapVersion;
-  const original = structuredClone(run);
-  migrateMap(run);
-  assert.equal(run.mapVersion, MAP_VERSION);
-  assert.deepEqual(run.battle, original.battle);
-  assert.deepEqual(run.deck, original.deck);
-  assert.deepEqual(run.route, original.route);
-  assert.equal(run.rng, original.rng);
-  assert.equal(run.stamina, original.stamina);
-  assert.equal(run.map[0][0].name, original.map[0][0].name);
-  const after = JSON.stringify(run);
-  migrateMap(run);
-  assert.equal(JSON.stringify(run), after);
-});
-
-test('Map generation is deterministic and differs between seeds', () => {
-  assert.deepEqual(generateMap(87), generateMap(87));
-  assert.notDeepEqual(generateMap(87), generateMap(88));
+test('Every stop returns to a map phase; the next game requires selecting its node', () => {
+  for (const stop of ['rest', 'training', 'shop', 'event']) {
+    const r = begin();
+    finish(r, false);
+    assert.equal(R.nextGame(r), false);
+    R.chooseReward(r, 'skip');
+    assert.equal(R.nextGame(r), false);
+    R.chooseStop(r, stop);
+    assert.equal(R.nextGame(r), false);
+    if (stop === 'shop') R.finishStop(r);
+    else if (stop === 'event') R.takeEvent(r, 'safe');
+    else R.takeRest(r, 'rest');
+    assert.equal(r.phase, 'ready');
+    assert.equal(r.battle.game, 1);
+    assert.equal(r.seriesStops[0], stop);
+    const stamina = r.stamina;
+    assert.equal(R.finishStop(r), false);
+    assert.equal(R.takeRest(r, 'rest'), false);
+    assert.equal(R.nextGame(r), true);
+    assert.equal(r.battle.game, 2);
+    assert.equal(r.stamina, stamina - 10);
+    assert.equal(R.nextGame(r), false);
+  }
 });

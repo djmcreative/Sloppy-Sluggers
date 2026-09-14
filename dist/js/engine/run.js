@@ -4,20 +4,19 @@ import { RELICS } from '../data/encounters.js';
 import { createBattle } from './battle.js';
 import { pick, shuffle } from './random.js';
 import { generateMap, MAP_VERSION } from './map.js';
-
 export function makeCard(run, id, upgraded = false) {
   return { id, uid: `card-${run.nextUid++}`, upgraded };
 }
-
 export function createRun(character, seed = Date.now() >>> 0) {
   if (!CHARACTERS[character]) throw new Error('Unknown character');
   const run = {
-    version: 1,
+    version: 2,
     character,
     seed,
     rng: seed,
     nextUid: 1,
-    inning: 1,
+    act: 1,
+    stage: 1,
     stamina: 100,
     cash: 35,
     relics: [],
@@ -25,58 +24,82 @@ export function createRun(character, seed = Date.now() >>> 0) {
     phase: 'map',
     battle: null,
     route: [],
-    lane: 1,
-    map: [],
+    map: generateMap(seed, 1),
     mapVersion: MAP_VERSION,
+    series: { wins: 0, losses: 0 },
+    opponent: null,
     rewards: [],
     shop: null,
     totalRuns: 0,
+    totalAllowed: 0,
     totalOuts: 0,
     completed: 0,
+    gamesWon: 0,
+    gamesLost: 0,
+    history: [],
   };
   run.deck = CHARACTERS[character].deck.map((id) => makeCard(run, id));
-  run.map = generateMap(seed);
   return run;
 }
-
 export function reachable(run, node) {
-  if (run.phase !== 'map' || node.inning !== run.inning) return false;
-  if (run.inning === 1) return true;
-  const previous = run.map[run.inning - 2].find((n) => n.id === run.route.at(-1));
-  return !!previous?.next.includes(node.id);
+  if (run.phase !== 'map' || node.stage !== run.stage) return false;
+  if (run.stage === 1) return true;
+  return !!run.map[run.stage - 2].find((n) => n.id === run.route.at(-1))?.next.includes(node.id);
 }
 export function enterNode(run, id) {
-  const node = run.map[run.inning - 1].find((n) => n.id === id);
+  const node = run.map[run.stage - 1]?.find((n) => n.id === id);
   if (!node || !reachable(run, node)) return false;
-  run.stamina = Math.max(0, run.stamina - 8);
-  run.lane = node.lane;
+  run.opponent = node;
   run.route.push(id);
-  run.battle = createBattle(run, node);
-  run.phase = 'battle';
+  run.series = { wins: 0, losses: 0 };
+  run.seriesStops = [];
+  beginGame(run);
   return true;
 }
+function beginGame(run) {
+  run.stamina = Math.max(0, run.stamina - 10);
+  run.battle = createBattle(run, run.opponent);
+  run.phase = 'battle';
+}
 export function finishBattle(run) {
-  if (run.phase !== 'battle' || run.battle.status === 'playing') return false;
   const b = run.battle;
-  run.totalRuns += b.runs;
+  if (run.phase !== 'battle' || !['won', 'lost'].includes(b.status)) return false;
+  const won = b.status === 'won';
+  run.totalRuns += b.score.player;
+  run.totalAllowed += b.score.enemy;
   run.totalOuts += b.totalOuts;
-  run.stamina = Math.max(0, run.stamina - b.totalOuts * 4);
-  if (b.status === 'lost') {
+  run.series[won ? 'wins' : 'losses']++;
+  run[won ? 'gamesWon' : 'gamesLost']++;
+  run.history.push({
+    act: run.act,
+    stage: run.stage,
+    opponent: b.node.name,
+    game: b.game,
+    player: b.score.player,
+    enemy: b.score.enemy,
+    won,
+    showdown: b.showdown,
+  });
+  run.lastRelic = null;
+  run.lastCash = won ? (b.node.elite ? 35 : 25) : 15;
+  run.cash += run.lastCash;
+  if (run.series.losses === 2) {
     run.phase = 'lost';
     return true;
   }
-  run.completed++;
-  const money = b.node.elite ? 40 : 24;
-  run.cash += money;
-  run.lastCash = money;
-  if (b.node.elite) {
-    const pool = Object.keys(RELICS).filter((id) => !run.relics.includes(id));
-    run.lastRelic = pool.length ? pick(run, pool) : null;
-    if (run.lastRelic) run.relics.push(run.lastRelic);
-  } else run.lastRelic = null;
-  if (run.inning === 9) {
-    run.phase = 'won';
-    return true;
+  if (run.series.wins === 2) {
+    run.completed++;
+    if (b.node.elite) {
+      const pool = Object.keys(RELICS).filter((id) => !run.relics.includes(id));
+      if (pool.length) {
+        run.lastRelic = pick(run, pool);
+        run.relics.push(run.lastRelic);
+      }
+    }
+    if (run.act === 3 && run.stage === 3) {
+      run.phase = 'won';
+      return true;
+    }
   }
   const pool = rewardPool(run.character).filter(
     (id) => !CARDS[id].limit || !run.deck.some((c) => c.id === id),
@@ -95,15 +118,44 @@ export function chooseReward(run, uid) {
     run.deck.push(chosen);
   }
   run.rewards = [];
-  run.phase = run.battle.node.stop;
-  if (run.phase === 'shop') prepareShop(run);
-  if (run.phase === 'event') run.event = pick(run, ['cage', 'hotdog', 'trade']);
+  run.phase = 'dugout';
   return true;
 }
-export function nextInning(run) {
-  run.inning++;
+export function chooseStop(run, choice) {
+  if (run.phase !== 'dugout' || !['rest', 'training', 'shop', 'event'].includes(choice))
+    return false;
+  run.phase = choice;
+  (run.seriesStops ??= [])[run.battle.game - 1] = choice;
+  (run.stopHistory ??= {})[`${run.act}-${run.stage}-${run.battle.game}`] = choice;
+  if (choice === 'shop') prepareShop(run);
+  if (choice === 'event') run.event = pick(run, ['cage', 'hotdog', 'trade']);
+  return true;
+}
+export function finishStop(run) {
+  if (!['shop', 'rest', 'training', 'event'].includes(run.phase)) return false;
+  run.phase = 'ready';
+  if (run.series.wins === 2) return nextGame(run);
+  return true;
+}
+export function nextGame(run) {
+  if (run.phase !== 'ready') return false;
+  if (run.series.wins < 2) {
+    beginGame(run);
+    return true;
+  }
+  run.stage++;
+  if (run.stage > 3) {
+    run.act++;
+    run.stage = 1;
+    run.route = [];
+    run.map = generateMap(run.seed, run.act);
+    recover(run, 25);
+  }
+  run.series = { wins: 0, losses: 0 };
+  run.opponent = null;
   run.battle = null;
   run.phase = 'map';
+  return true;
 }
 export function recover(run, amount) {
   run.stamina = Math.min(100, run.stamina + amount);
@@ -120,7 +172,7 @@ export function takeRest(run, choice, uid) {
   else if (choice === 'upgrade') {
     if (!upgrade(run, uid)) return false;
   } else return false;
-  nextInning(run);
+  finishStop(run);
   return true;
 }
 export function takeEvent(run, choice) {
@@ -146,7 +198,7 @@ export function takeEvent(run, choice) {
       run.deck.push(makeCard(run, pick(run, rewardPool(run.character))));
     }
   }
-  nextInning(run);
+  finishStop(run);
   return true;
 }
 function prepareShop(run) {

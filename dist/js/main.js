@@ -1,5 +1,6 @@
+import { installCardDrag } from './ui/card-drag.js';
 import * as Run from './engine/run.js';
-import { playCard, endTurn } from './engine/battle.js';
+import { playCard, endTurn, advanceHalf, canPlay } from './engine/battle.js';
 import { loadRun, saveRun } from './engine/storage.js';
 import { html, topbar, relicbar, button } from './ui/components.js';
 import * as Screens from './ui/screens.js';
@@ -13,21 +14,25 @@ let saved = loadRun(),
   selected = 'dean',
   muted = true,
   screen = 'title',
-  toastTimer;
+  toastTimer,
+  dragControls;
 
-function render(animated = false) {
+function render(animated = false, sideTransition = false) {
+  dragControls?.cancel();
   let content;
   if (screen === 'title') content = Screens.titleScreen(selected, saved);
   else if (screen === 'roster') content = Screens.rosterScreen(selected);
   else {
     const renderers = {
       map: Screens.mapScreen,
-      battle: (r) => Screens.battleScreen(r, animated),
+      battle: (r) => Screens.battleScreen(r, animated, sideTransition),
       reward: Screens.rewardScreen,
+      dugout: Screens.mapScreen,
       rest: Screens.restScreen,
       training: Screens.restScreen,
       event: Screens.eventScreen,
       shop: Screens.shopScreen,
+      ready: Screens.mapScreen,
       won: Screens.endScreen,
       lost: Screens.endScreen,
     };
@@ -37,10 +42,10 @@ function render(animated = false) {
   const playing = screen === 'game';
   app.innerHTML =
     topbar(playing ? run : null, screen, muted) + (playing ? relicbar(run) : '') + content;
-  if (playing && run.phase === 'map') {
+  if (playing && ['map', 'dugout', 'ready'].includes(run.phase)) {
     const map = app.querySelector('.journey-scroll');
     const current = app.querySelector('.journey-node.available');
-    if (map && current) map.scrollTop = Math.max(0, current.offsetTop - map.clientHeight * 0.68);
+    if (map && current) map.scrollTop = Math.max(0, current.offsetTop - map.clientHeight * 0.5);
   }
 }
 function persist() {
@@ -56,6 +61,7 @@ function toast(message) {
   toastTimer = setTimeout(() => element.classList.remove('visible'), 4000);
 }
 function openModal(content) {
+  dragControls?.cancel();
   modal.innerHTML = html`<button class="modal-close" data-action="close" aria-label="Close dialog">
       ×</button
     >${content}`;
@@ -70,16 +76,21 @@ function startRun() {
   window.scrollTo(0, 0);
 }
 function updateBattle(action) {
-  const oldRuns = run.battle.runs;
+  const oldRuns = run.battle.score.player,
+    oldSide = run.battle.side;
   if (!action()) return;
   const completed = Run.finishBattle(run);
   playSound(
-    completed && run.battle.status === 'won' ? 'win' : run.battle.runs > oldRuns ? 'hit' : 'pitch',
+    completed && run.battle.status === 'won'
+      ? 'win'
+      : run.battle.score.player > oldRuns
+        ? 'hit'
+        : 'pitch',
     muted,
   );
   document.querySelector('#announcer').textContent = run.battle.log.slice(-2).join(' ');
   persist();
-  render(true);
+  render(true, oldSide !== run.battle.side);
   if (completed) window.scrollTo(0, 0);
 }
 
@@ -110,7 +121,7 @@ document.addEventListener('click', (event) => {
       if (saved && !['won', 'lost'].includes(saved.phase))
         openModal(
           html`<h2 id="modal-title">Start a new run?</h2>
-            <p>This replaces your saved run at inning ${saved.inning}.</p>
+            <p>This replaces your saved run at act ${saved.act}, series ${saved.stage}.</p>
             ${button('START NEW RUN', 'confirm-start', 'primary')}${button(
               'KEEP MY RUN',
               'close',
@@ -179,8 +190,20 @@ document.addEventListener('click', (event) => {
     case 'play':
       if (run?.phase === 'battle') updateBattle(() => playCard(run.battle, uid));
       break;
+    case 'next-half':
+      if (run?.phase === 'battle') updateBattle(() => advanceHalf(run.battle));
+      break;
+    case 'stop':
+      if (Run.chooseStop(run, id)) {
+        persist();
+        render();
+      }
+      break;
     case 'end-turn':
-      if (run?.phase === 'battle') updateBattle(() => endTurn(run.battle));
+      if (run?.phase === 'battle')
+        updateBattle(() =>
+          run.battle.status === 'switch' ? advanceHalf(run.battle) : endTurn(run.battle),
+        );
       break;
     case 'reward':
     case 'skip-reward':
@@ -224,7 +247,7 @@ document.addEventListener('click', (event) => {
       if (Run.buy(run, 'relic')) {
         persist();
         render();
-        toast('Equipment is active next inning.');
+        toast('Equipment is active next game.');
       }
       break;
     case 'buy-recover':
@@ -245,9 +268,16 @@ document.addEventListener('click', (event) => {
         toast('Card removed from your playbook.');
       }
       break;
+    case 'next-game':
+      if (Run.nextGame(run)) {
+        persist();
+        render();
+        window.scrollTo(0, 0);
+      }
+      break;
     case 'leave-shop':
       if (run.phase === 'shop') {
-        Run.nextInning(run);
+        Run.finishStop(run);
         persist();
         render();
       }
@@ -255,7 +285,12 @@ document.addEventListener('click', (event) => {
   }
 });
 document.addEventListener('keydown', (event) => {
-  if (event.repeat || modal.open || ['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName))
+  if (
+    event.repeat ||
+    dragControls?.active ||
+    modal.open ||
+    ['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName)
+  )
     return;
   if (screen !== 'game') return;
   if (event.key.toLowerCase() === 'd') {
@@ -266,7 +301,9 @@ document.addEventListener('keydown', (event) => {
   if (run.phase !== 'battle') return;
   if (event.code === 'Space' && event.target.tagName !== 'BUTTON') {
     event.preventDefault();
-    updateBattle(() => endTurn(run.battle));
+    updateBattle(() =>
+      run.battle.status === 'switch' ? advanceHalf(run.battle) : endTurn(run.battle),
+    );
   }
   const index = Number(event.key) - 1;
   if (index >= 0 && index < 9 && run.battle.hand[index]) {
@@ -285,5 +322,11 @@ modal.addEventListener('click', (event) => {
     )
       modal.close();
   }
+});
+dragControls = installCardDrag({
+  root: app,
+  canPlay: (uid) =>
+    screen === 'game' && run?.phase === 'battle' && !modal.open && canPlay(run.battle, uid),
+  play: (uid) => updateBattle(() => playCard(run.battle, uid)),
 });
 render();

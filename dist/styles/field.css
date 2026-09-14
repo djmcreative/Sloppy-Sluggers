@@ -1,0 +1,325 @@
+/* One 480 × 270 world owns both the artwork and every ground anchor.
+   Resize the world, never the sprites independently of the plate or mound. */
+body[data-screen='battle'] {
+  background: #172a25;
+  overflow-y: auto;
+}
+.two-way-battle {
+  isolation: isolate;
+}
+.field-scene {
+  position: absolute;
+  inset: 0 0 355px;
+  overflow: hidden;
+  z-index: -1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: #16271f;
+}
+.field-world {
+  position: relative;
+  width: min(100%, 1000px);
+  aspect-ratio: 480 / 270;
+  flex: none;
+  container-type: inline-size;
+}
+.stadium-art {
+  position: absolute;
+  inset: 0;
+  background: url('../assets/art/originals/baseball-bg.png') center / 100% 100%;
+  image-rendering: pixelated;
+  transform: scaleX(var(--field-direction, 1));
+}
+.on-defense {
+  --field-direction: -1;
+}
+.field-player {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  width: 22%;
+  height: 42%;
+  z-index: 1;
+}
+.field-player.at-plate {
+  left: 26%;
+  top: 81%;
+}
+.field-player.at-mound {
+  left: 78%;
+  top: 59%;
+  width: 18%;
+  height: 34%;
+}
+.on-defense .field-player.at-plate {
+  left: 74%;
+}
+.on-defense .field-player.at-mound {
+  left: 22%;
+}
+.two-way-battle .field-player > img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  animation: none;
+}
+.two-way-battle .field-player .unit-label {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 150%;
+  min-width: 0;
+  max-width: none;
+  padding-top: 4px;
+}
+.two-way-battle .field-player .unit-label strong {
+  font-size: clamp(13px, 2cqw, 23px);
+}
+.two-way-battle .field-player .unit-label span {
+  font-size: clamp(9px, 1.1cqw, 13px);
+}
+.ground-plate,
+.pitching-rubber {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  background: #f8e9c4;
+  box-shadow: 0 2px #5a422a;
+}
+.ground-plate {
+  left: 26%;
+  top: 81%;
+  width: 4%;
+  height: 3%;
+  clip-path: polygon(0 0, 100% 0, 100% 55%, 50% 100%, 0 55%);
+}
+.pitching-rubber {
+  left: 78%;
+  top: 59%;
+  width: 4%;
+  height: 1%;
+}
+.on-defense .ground-plate {
+  left: 74%;
+}
+.on-defense .pitching-rubber {
+  left: 22%;
+}
+.two-way-battle .field > .pitch-intent {
+  position: absolute;
+  right: auto;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 215px;
+  width: 245px;
+  min-width: 0;
+  z-index: 3;
+}
+.two-way-battle .base-board {
+  bottom: 410px;
+  transform: translateX(-50%) scale(0.7);
+}
+.two-way-battle .field > .pitch-intent small {
+  font:
+    600 12px/1.45 system-ui,
+    sans-serif;
+}
+.line-score td,
+.line-score th:first-child,
+.defense-status > strong,
+.card-cost,
+.card-copy {
+  font-family: Consolas, ui-monospace, monospace;
+}
+.line-score th:first-child {
+  max-width: 215px;
+  font-size: 12px;
+}
+.two-sided .card-copy {
+  font-size: 14px;
+  line-height: 1.35;
+}
+.two-way-battle .hand .game-card {
+  min-height: 260px;
+}
+.two-way-battle .field-vignette {
+  pointer-events: none;
+  z-index: 0;
+}
+.card-play-zone {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 200px;
+  bottom: 415px;
+  pointer-events: none;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  border: 3px dashed transparent;
+  border-radius: 18px;
+}
+.card-play-zone span {
+  opacity: 0;
+  padding: 12px 18px;
+  background: #123f31;
+  color: #fff2ba;
+  box-shadow: 0 4px #091b19;
+}
+.dragging-card .card-play-zone {
+  border-color: #eecb77;
+  background: #f0cd6e12;
+}
+.dragging-card .card-play-zone span {
+  opacity: 1;
+}
+.over-play-zone .card-play-zone {
+  border-color: #a8ed97;
+  background: #8eff9525;
+}
+.hand [data-action='play'] {
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+}
+.hand .card-being-dragged {
+  opacity: 0.25;
+}
+.card-drag-ghost {
+  position: fixed !important;
+  z-index: 1000 !important;
+  pointer-events: none;
+  transform: translate(-50%, -55%) rotate(-4deg) !important;
+  min-height: 260px;
+  box-shadow: 10px 15px 15px #0009;
+}
+.side-transition .stadium-art {
+  animation: field-turn 650ms ease-in-out both;
+}
+.side-transition .field-player {
+  animation: players-change 650ms ease-in-out both;
+}
+@keyframes field-turn {
+  0% {
+    transform: scaleX(calc(-1 * var(--field-direction, 1)));
+    filter: brightness(1);
+  }
+  48% {
+    transform: scaleX(0);
+    filter: brightness(0.3);
+  }
+  100% {
+    transform: scaleX(var(--field-direction, 1));
+    filter: brightness(1);
+  }
+}
+@keyframes players-change {
+  0%,
+  45% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+.series-paper {
+  height: 1280px;
+  min-height: 1280px;
+}
+.series-paper .journey-node-title {
+  display: block;
+  width: 145px;
+  max-width: 145px;
+}
+.series-paper .journey-node-title small {
+  font-size: 12px;
+  white-space: normal;
+  line-height: 1.2;
+}
+.full-act-paper {
+  min-width: 680px;
+}
+.full-act-paper .route-paths {
+  height: 100%;
+}
+.full-act-paper .journey-node-title {
+  display: block;
+  width: 146px;
+  min-width: 0;
+  max-width: 146px;
+  line-height: 1.1;
+}
+.full-act-paper .journey-node-title small {
+  white-space: normal;
+  font-size: 12px;
+  line-height: 1.2;
+}
+.full-act-paper .route-abandoned {
+  opacity: 0.25;
+}
+.full-act-paper .route-game .journey-node-title {
+  border-bottom: 2px solid #987345;
+}
+.series-map-heading {
+  position: absolute;
+  left: 5%;
+  right: 5%;
+  text-align: center;
+  border-top: 1px solid #8a775b;
+  padding-top: 7px;
+  font-size: 17px;
+  pointer-events: none;
+}
+.series-map-heading small {
+  display: block;
+  font-size: 12px;
+}
+@media (max-width: 1050px) {
+  .two-way-battle .field > .pitch-intent {
+    top: 215px;
+    right: auto;
+    width: 205px;
+  }
+}
+@media (max-width: 700px) {
+  .field-scene {
+    bottom: 510px;
+  }
+  .two-way-battle .field > .pitch-intent {
+    top: 210px;
+    right: auto;
+    width: 180px;
+    padding: 6px;
+  }
+  .two-way-battle .field > .pitch-intent strong {
+    font-size: 17px;
+  }
+  .two-way-battle .field > .pitch-intent small {
+    font-size: 11px;
+  }
+  .two-way-battle .base-board {
+    bottom: 535px;
+    left: 50%;
+    transform: translateX(-50%) scale(0.55);
+  }
+  .card-play-zone {
+    top: 260px;
+    bottom: 530px;
+    left: 3%;
+    right: 3%;
+  }
+  .line-score th:first-child {
+    font-size: 10px;
+    max-width: 120px;
+  }
+  .two-way-battle .hand .game-card {
+    min-height: 260px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .side-transition .stadium-art,
+  .side-transition .field-player {
+    animation: none;
+  }
+}

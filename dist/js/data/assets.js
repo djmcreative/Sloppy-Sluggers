@@ -7,10 +7,23 @@ const characters = {
   'Speedster in game': 'speedster-batting',
   'Speedster character selection': 'speedster-portrait',
 };
+const twoWay = new Set([
+  'dean-pitching',
+  'captain-pitching',
+  'speedster-pitching',
+  'bruiser-pitching',
+  'bruiser-batting',
+  'phantom-pitching',
+  'phantom-batting',
+  'inferno-pitching',
+  'inferno-batting',
+]);
 export const art = (name) =>
-  characters[name]
-    ? `./assets/art/characters/${characters[name]}.png`
-    : root + encodeURIComponent(name + '.png');
+  twoWay.has(name)
+    ? `./assets/art/two-way/${name}.png`
+    : characters[name]
+      ? `./assets/art/characters/${characters[name]}.png`
+      : root + encodeURIComponent(name + '.png');
 export const ASSETS = {
   field: art('baseball-bg'),
   dean: art('Dean Kean in game'),

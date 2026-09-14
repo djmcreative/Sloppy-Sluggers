@@ -35,16 +35,14 @@ for (const m of html.matchAll(/(?:src|href)="(\.\/[^"#]+)"/g))
   await access(resolve(root, decodeURIComponent(m[1])));
 const { CARDS } = await import('../dist/js/data/cards.js');
 const { CHARACTERS } = await import('../dist/js/data/characters.js');
-const { PITCHERS, PITCHES, RELICS } = await import('../dist/js/data/encounters.js');
-const { CARD_ART } = await import('../dist/js/data/card-art.js');
+const { TEAMS, RELICS } = await import('../dist/js/data/encounters.js');
 const { art } = await import('../dist/js/data/assets.js');
 const images = [
-  ...Object.values(CARDS).map((c) => c.icon),
-  ...Object.values(CHARACTERS).flatMap((c) => [c.sprite, c.portrait, c.icon]),
-  ...PITCHERS.map((p) => p.art),
-  ...Object.values(PITCHES).map((p) => p.icon),
+  ...Object.values(CARDS).flatMap((c) => [c.offense.icon, c.defense.icon]),
+  ...Object.values(CHARACTERS).flatMap((c) => [c.sprite, c.pitching, c.portrait, c.icon]),
+  ...TEAMS.flatMap((p) => [p.pitching, p.batting]),
+
   ...Object.values(RELICS).map((r) => r.icon),
-  ...Object.values(CARD_ART),
 ];
 for (const name of images) await access(resolve(root, decodeURIComponent(art(name))));
 console.log(

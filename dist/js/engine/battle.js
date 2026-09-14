@@ -1,217 +1,274 @@
 import { definition } from '../data/cards.js';
-import { PITCHES } from '../data/encounters.js';
-import { pick, random, shuffle } from './random.js';
+import { random, shuffle, pick } from './random.js';
+import { advance, baseHit, walk } from './baseball.js';
 
-export function log(battle, message) {
-  battle.log.push(message);
-  if (battle.log.length > 40) battle.log.shift();
-}
+export const log = (b, message) => {
+  b.log.push(message);
+  if (b.log.length > 100) b.log.shift();
+};
+export const battingTeam = (b) => (b.side === 'offense' ? 'player' : 'enemy');
 export function createBattle(run, node) {
   const b = {
     rng: Math.floor(random(run) * 0xffffffff),
     character: run.character,
     relics: [...run.relics],
-    inning: run.inning,
-    node,
-    target: node.target,
-    runs: 0,
+    node: { ...node },
+    act: run.act,
+    game: run.series.wins + run.series.losses + 1,
+    home: run.series.wins + run.series.losses === 1,
+    inning: 1,
+    half: 0,
+    side: 'offense',
+    score: { player: 0, enemy: 0 },
+    lines: [{ player: 0, enemy: 0 }],
     outs: 0,
-    strikes: 0,
-    balls: run.character === 'captain' ? 1 : 0,
-    bases: [run.relics.includes('cleats'), false, false],
+    bases: [false, false, false],
+    turn: 0,
+    halfTurn: 0,
+    energy: 0,
+    contact: 0,
+    pitch: 0,
+    field: 0,
+    deck: run.deck.map((c) => ({ ...c })),
+    hand: [],
     drawPile: [],
     discard: [],
-    hand: [],
     exhausted: [],
-    turn: 0,
-    energy: 0,
-    foul: 0,
-    focus: run.relics.includes('gloves') ? 1 : 0,
-    tempo: false,
-    powers: {},
-    firstHit: false,
-    usedSingle: false,
-    capUsed: false,
-    gloveUsed: false,
     tired: run.stamina < 30,
     status: 'playing',
-    pitch: null,
+    showdown: false,
+    showdownMargins: { player: 0, enemy: 0 },
+    nextContact: 0,
+    nextPitch: 0,
+    powers: {},
     log: [],
     totalOuts: 0,
+    totalEnemyOuts: 0,
   };
-  b.drawPile = shuffle(
-    b,
-    run.deck.map((c) => ({ ...c })),
-  );
-  log(b, `${node.name} takes the mound. Score ${b.target} runs.`);
-  startTurn(b);
+  log(b, `${node.name}: game ${b.game}. Outscore them over three innings.`);
+  startHalf(b);
   return b;
 }
-
 export function draw(b, count) {
   for (let i = 0; i < count && b.hand.length < 10; i++) {
     if (!b.drawPile.length) {
       b.drawPile = shuffle(b, b.discard);
       b.discard = [];
     }
-    if (!b.drawPile.length) return;
+    if (!b.drawPile.length) break;
     b.hand.push(b.drawPile.pop());
   }
 }
-
-export function choosePitch(b) {
-  const style = b.node.style;
-  const runners = b.bases.filter(Boolean).length;
-  const roll = random(b);
-  let key;
-  if (b.turn === 1) key = style === 'junk' ? 'curve' : 'fastball';
-  else if (runners >= 2 && roll < (style === 'runners' ? 0.33 : 0.16)) key = 'two';
-  else if (runners && roll < 0.23) key = 'pickoff';
-  else {
-    const pools = {
-      heat: ['fastball', 'fastball', 'heat', 'heat', 'curve', 'waste'],
-      junk: ['curve', 'curve', 'fastball', 'heat', 'waste', 'corner'],
-      control: ['fastball', 'fastball', 'corner', 'curve', 'waste', 'waste'],
-      runners: ['fastball', 'curve', 'heat', 'waste'],
-      closer: ['fastball', 'heat', 'heat', 'curve', 'corner', 'waste'],
+function chooseIntent(b) {
+  const level = b.act - 1 + (b.node.elite ? 1 : 0);
+  if (b.side === 'offense') {
+    const style = pick(b, [0, 0, 1, 2]);
+    const scouting = b.showdown ? 0 : b.halfTurn - 1;
+    return {
+      name: ['Fastball', 'Changeup', 'Heavy Sinker'][style],
+      icon: ['fastball', 'curveball', 'high heat'][style],
+      strength: 4 + level + style + scouting,
+      scouting,
+      text: 'Match Pitch with Contact for a single. Each 2 extra Contact adds a base.',
     };
-    key = pick(b, pools[style]);
   }
-  const pitch = { ...PITCHES[key], key };
-  // The ramp is bounded; late innings remain winnable with defensive decks.
-  const ramp = Math.min(2, Math.floor((b.turn - 1) / 4));
-  pitch.strikes +=
-    pitch.strikes && !pitch.pierce
-      ? ramp + Math.floor((b.inning - 1) / 3) + (b.node.elite ? 1 : 0)
-      : 0;
-  return pitch;
+  const routine = !b.showdown && b.halfTurn % 4 === 0;
+  const strength = routine ? 0 : (b.showdown ? 8 : 7 + pick(b, [0, 1, 2, 3])) + level + (b.act - 1);
+  return {
+    name: routine ? 'Routine Pop-Up' : strength >= 7 ? 'Big Swing' : 'Line-Drive Swing',
+    icon: routine ? 'glove' : 'high heat',
+    strength,
+    routine,
+    text: routine
+      ? 'An unforced out. Set up your next at-bat.'
+      : 'Pitch removes Contact. Each 2 Contact left is 1 hit base; Field removes bases. Zero bases is an out.',
+  };
 }
-
+function startHalf(b) {
+  b.side = (b.half === 0) !== b.home ? 'offense' : 'defense';
+  b.status = 'playing';
+  b.outs = 0;
+  b.halfTurn = 0;
+  b.powers = {};
+  b.nextContact = 0;
+  b.nextPitch = 0;
+  b.firstHit = false;
+  b.speedUsed = false;
+  b.gloveUsed = false;
+  b.capUsed = false;
+  b.bonusDraw = 0;
+  b.bases = b.showdown
+    ? [true, true, true]
+    : [b.side === 'offense' && b.relics.includes('cleats'), false, false];
+  b.hand = [];
+  b.discard = [];
+  b.exhausted = [];
+  b.drawPile = shuffle(
+    b,
+    b.deck.map((c) => ({ ...c })),
+  );
+  log(
+    b,
+    `${b.showdown ? 'Showdown' : `Inning ${b.inning}`} ${b.half === 0 ? 'top' : 'bottom'}: ${b.side === 'offense' ? 'Sluggers batting' : 'Sluggers pitching'}.`,
+  );
+  startTurn(b);
+}
 export function startTurn(b) {
   b.turn++;
-  b.firstHit = false;
-  b.usedSingle = false;
-  b.energy = 3 + (b.turn === 1 && b.relics.includes('drink') ? 1 : 0);
-  b.foul = (b.powers.discipline ? 1 : 0) + (b.turn === 1 && b.relics.includes('rosin') ? 1 : 0);
-  const bonus = b.tempo ? 1 : 0;
-  b.tempo = false;
-  draw(b, (b.tired ? 4 : 5) + bonus);
-  if (bonus) log(b, 'Good read. Draw an extra card.');
-  b.pitch = choosePitch(b);
-}
-
-function checkWin(b) {
-  if (b.runs >= b.target && b.status === 'playing') {
-    b.status = 'won';
-    log(b, 'Ballgame! You got the runs.');
+  b.halfTurn++;
+  b.energy = 3 + (b.halfTurn === 1 && b.relics.includes('drink') ? 1 : 0);
+  b.contact = b.nextContact + (b.powers.rhythm && b.side === 'offense' ? 1 : 0);
+  b.pitch = b.nextPitch + (b.powers.rhythm && b.side === 'defense' ? 1 : 0);
+  b.nextContact = 0;
+  b.nextPitch = 0;
+  b.field = 0;
+  b.risk = false;
+  b.doubleplay = false;
+  b.forced = null;
+  b.sacrificeAdvance = 0;
+  if (b.halfTurn === 1) {
+    if (b.side === 'offense' && b.relics.includes('gloves')) b.contact++;
+    if (b.side === 'defense')
+      b.pitch += (b.character !== 'speed' ? 1 : 0) + (b.relics.includes('rosin') ? 2 : 0);
   }
+  draw(
+    b,
+    (b.tired ? 4 : 5) + b.bonusDraw + (b.character === 'captain' && b.halfTurn === 1 ? 1 : 0),
+  );
+  b.bonusDraw = 0;
+  b.intent = chooseIntent(b);
 }
-
-export function advanceRunners(b, amount, all = true) {
-  for (let i = 2; i >= 0; i--) {
-    if (!b.bases[i]) continue;
-    const next = i + amount;
-    // Never overwrite an occupied base when advancing only the lead runner.
-    if (next < 3 && b.bases[next]) continue;
-    b.bases[i] = false;
-    if (next >= 3) {
-      b.runs++;
-      log(b, 'A runner comes home!');
-    } else b.bases[next] = true;
-    if (!all) break;
-  }
+function scoreRuns(b, count) {
+  if (!count) return;
+  const team = battingTeam(b);
+  b.score[team] += count;
+  b.lines[b.inning - 1][team] += count;
+  log(b, `${team === 'player' ? 'Sluggers' : b.node.name} score ${count}!`);
+  // The home side can walk off only in the bottom of the last regular inning.
+  const home = b.home ? 'player' : 'enemy',
+    away = b.home ? 'enemy' : 'player';
+  if (!b.showdown && b.inning === 3 && b.half === 1 && b.score[home] > b.score[away]) finishGame(b);
 }
-
-export function hit(b, amount) {
-  const bonus = b.character === 'dean' && b.strikes === 2 && !b.firstHit ? 1 : 0;
-  const distance = Math.min(4, amount + b.focus + bonus);
-  if (b.character === 'dean' && distance > 1 && !b.firstHit) b.foul++;
-  b.focus = 0;
-  advanceRunners(b, distance);
-  if (distance === 4) b.runs++;
-  else b.bases[distance - 1] = true;
-  log(b, ['', 'Single!', 'Double!', 'Triple!', 'HOME RUN!'][distance]);
-  if (b.powers.rhythm && !b.firstHit) b.foul++;
-  b.firstHit = true;
-  if (b.character === 'speed' && distance === 1 && !b.usedSingle) {
-    b.usedSingle = true;
-    advanceRunners(b, 1, false);
-    log(b, 'Turf Shoes: take the extra base.');
-  }
-  // Hits intentionally preserve the count: cards are tactical plays, not literal at-bats.
-  checkWin(b);
+function finishGame(b, winner = null) {
+  winner ??= b.score.player > b.score.enemy ? 'player' : 'enemy';
+  b.status = winner === 'player' ? 'won' : 'lost';
+  log(
+    b,
+    `${winner === 'player' ? 'Sluggers win' : 'Game lost'} ${b.score.player}–${b.score.enemy}.`,
+  );
 }
-
-export function recordOut(b) {
-  b.outs++;
-  b.totalOuts++;
-  b.strikes = 0;
-  b.balls = 0;
-  log(b, `Out ${b.outs} of 3.`);
-  if (b.outs >= 3) {
-    b.status = 'lost';
-    log(b, 'Three outs. The run ends here.');
+function finishHalf(b) {
+  if (b.status !== 'playing') return;
+  if (b.showdown && b.half === 1) {
+    if (b.score.player !== b.score.enemy) finishGame(b);
+    else {
+      const margin = b.showdownMargins.player - b.showdownMargins.enemy;
+      const winner = margin ? (margin > 0 ? 'player' : 'enemy') : b.home ? 'player' : 'enemy';
+      log(
+        b,
+        `Showdown tied: contact margins ${b.showdownMargins.player}–${b.showdownMargins.enemy}.${margin === 0 ? ' Home field breaks the exact tie.' : ' Higher margin wins.'}`,
+      );
+      finishGame(b, winner);
+    }
     return;
   }
-  if (b.relics.includes('cap') && !b.capUsed) {
-    b.capUsed = true;
-    draw(b, 2);
-    log(b, 'Rally Cap: draw 2.');
-  }
-}
-
-export function addStrikes(b, count) {
-  for (let i = 0; i < count && b.status === 'playing'; i++) {
-    b.strikes++;
-    if (b.strikes === 3) recordOut(b);
-  }
-}
-
-export function addBalls(b, count) {
-  for (let i = 0; i < count && b.status === 'playing'; i++) {
-    b.balls++;
-    if (b.balls < 4) continue;
-    if (b.bases[0]) {
-      if (b.bases[1]) {
-        if (b.bases[2]) b.runs++;
-        b.bases[2] = true;
-      }
-      b.bases[1] = true;
+  if (!b.showdown && b.inning === 3) {
+    const home = b.home ? 'player' : 'enemy',
+      away = b.home ? 'enemy' : 'player';
+    if (b.half === 0 && b.score[home] > b.score[away]) {
+      finishGame(b);
+      return;
     }
-    b.bases[0] = true;
-    b.balls = 0;
-    b.strikes = 0;
-    if (b.character === 'captain') draw(b, 1);
-    log(b, 'Ball four! Runner on first. Count cleared.');
-    checkWin(b);
+    if (b.half === 1 && b.score.player !== b.score.enemy) {
+      finishGame(b);
+      return;
+    }
   }
+  b.status = 'switch';
+  log(
+    b,
+    b.half === 1 && b.inning === 3
+      ? 'Tied after three. One bases-loaded at-bat per side decides it.'
+      : 'Side retired. Switch the field.',
+  );
 }
-
+export function advanceHalf(b) {
+  if (b.status !== 'switch') return false;
+  if (b.half === 0) b.half = 1;
+  else {
+    b.half = 0;
+    b.inning++;
+    b.lines.push({ player: 0, enemy: 0 });
+    if (b.inning === 4) b.showdown = true;
+  }
+  startHalf(b);
+  return true;
+}
+export function recordOut(b) {
+  if (b.status !== 'playing') return;
+  b.outs++;
+  if (b.side === 'offense') {
+    b.totalOuts++;
+    if (b.relics.includes('cap') && !b.capUsed) {
+      b.capUsed = true;
+      b.bonusDraw++;
+    }
+  } else b.totalEnemyOuts++;
+  log(b, `Out ${b.outs} of 3.`);
+  if (b.outs >= 3) finishHalf(b);
+}
+export function previewAtBat(b) {
+  const margin = b.side === 'offense' ? b.contact - b.intent.strength : b.intent.strength - b.pitch;
+  if (b.forced === 'walk') return { kind: 'walk', bases: 0, margin, label: 'Walk' };
+  if (b.forced === 'out') return { kind: 'out', bases: 0, margin, label: 'Sacrifice out' };
+  let bases,
+    speedSaved = false,
+    gloveSaved = false;
+  if (b.side === 'offense') {
+    bases = margin < 0 ? 0 : Math.min(4, 1 + Math.floor(margin / 2));
+    if (bases && b.character === 'dean' && !b.firstHit) bases = Math.min(4, bases + 1);
+  } else {
+    bases = Math.max(0, Math.min(4, Math.ceil(margin / 2)) - b.field);
+    if (bases && b.risk) bases = Math.min(4, bases + 1);
+    if (bases > 1 && b.character === 'speed' && !b.speedUsed) {
+      bases--;
+      speedSaved = true;
+    }
+    if (bases && b.relics.includes('glove') && !b.gloveUsed) {
+      bases--;
+      gloveSaved = true;
+    }
+  }
+  return {
+    kind: bases > 0 ? 'hit' : 'out',
+    bases,
+    margin,
+    speedSaved,
+    gloveSaved,
+    label:
+      ['', 'Single', 'Double', 'Triple', 'Home run'][bases] ||
+      (b.side === 'offense'
+        ? 'Batter out'
+        : b.doubleplay && b.bases[0] && b.outs < 2
+          ? 'Double play'
+          : 'Batter retired'),
+  };
+}
+export const incoming = (b) => previewAtBat(b).bases;
+export function canPlay(b, uid) {
+  const card = b.hand.find((c) => c.uid === uid);
+  return b.status === 'playing' && !!card && definition(card, b.side).cost <= b.energy;
+}
 function applyEffect(b, { op, amount }) {
   switch (op) {
-    case 'hit':
-      hit(b, amount);
+    case 'contact':
+      b.contact += amount;
       break;
-    case 'block':
-      b.foul += amount;
+    case 'pitch':
+      b.pitch += amount;
       break;
-    case 'ball':
-      addBalls(b, amount);
-      break;
-    case 'advance':
-      advanceRunners(b, amount, false);
-      break;
-    case 'advanceAll':
-      advanceRunners(b, amount);
-      break;
-    case 'strike':
-      addStrikes(b, amount);
-      break;
-    case 'out':
-      recordOut(b);
-      break;
-    case 'focus':
-      b.focus = Math.min(3, b.focus + amount);
+    case 'field':
+      b.field += amount;
       break;
     case 'draw':
       draw(b, amount);
@@ -219,42 +276,67 @@ function applyEffect(b, { op, amount }) {
     case 'energy':
       b.energy += amount;
       break;
-    case 'clear':
-      b.strikes = Math.max(0, b.strikes - amount);
+    case 'focus':
+      b.nextContact += amount;
       break;
+    case 'aim':
+      b.nextPitch += amount;
+      break;
+    case 'advance':
+      scoreRuns(b, advance(b.bases, amount, false));
+      break;
+    case 'advanceAll':
+      scoreRuns(b, advance(b.bases, amount));
+      break;
+    case 'sacrifice':
+      b.forced = 'out';
+      b.sacrificeAdvance = amount;
+      break;
+    case 'walk':
+      b.forced = 'walk';
+      break;
+    case 'doubleplay':
+      b.doubleplay = true;
+      break;
+    case 'pickoff': {
+      const i = b.bases.lastIndexOf(true);
+      if (i >= 0) {
+        b.bases[i] = false;
+        recordOut(b);
+      }
+      break;
+    }
     case 'clutch':
-      hit(b, b.outs === 2 ? 4 : amount);
+      b.contact += amount + (b.outs === 2 ? 3 : 0);
       break;
-    case 'payoff':
-      hit(b, b.strikes === 2 ? 4 : amount);
-      break;
-    case 'discipline':
-      b.powers.discipline = 1;
+    case 'closer':
+      b.pitch += amount + (b.outs === 2 ? 3 : 0);
       break;
     case 'rhythm':
-      b.powers.rhythm = 1;
+      b.powers.rhythm = true;
+      break;
+    case 'risk':
+      b.risk = true;
+      break;
+    case 'loaded':
+      b.contact += amount + b.bases.filter(Boolean).length;
+      break;
+    case 'pressure':
+      b.pitch += amount + b.bases.filter(Boolean).length;
       break;
     default:
-      throw new Error(`Unknown card effect: ${op}`);
+      throw new Error(`Unknown effect: ${op}`);
   }
-  checkWin(b);
 }
-
-export function canPlay(b, uid) {
-  const instance = b.hand.find((c) => c.uid === uid);
-  if (!instance || b.status !== 'playing') return false;
-  const c = definition(instance);
-  return !c.unplayable && c.cost <= b.energy;
-}
-
 export function playCard(b, uid) {
   if (!canPlay(b, uid)) return false;
-  const index = b.hand.findIndex((c) => c.uid === uid);
-  const instance = b.hand.splice(index, 1)[0];
-  const c = definition(instance);
+  const instance = b.hand.splice(
+    b.hand.findIndex((c) => c.uid === uid),
+    1,
+  )[0];
+  const c = definition(instance, b.side);
   b.energy -= c.cost;
-  log(b, `${c.name}.`);
-  // A winning effect ends the inning before later self-damage is applied.
+  log(b, c.name);
   for (const effect of c.effects) {
     if (b.status !== 'playing') break;
     applyEffect(b, effect);
@@ -262,47 +344,46 @@ export function playCard(b, uid) {
   (c.exhaust ? b.exhausted : b.discard).push(instance);
   return true;
 }
-
-export function incoming(b) {
-  return b.pitch.pierce ? b.pitch.strikes : Math.max(0, b.pitch.strikes - b.foul);
-}
-
 export function endTurn(b) {
   if (b.status !== 'playing') return false;
-  b.discard.push(...b.hand);
-  b.hand = [];
-  const p = b.pitch;
-  const damage = incoming(b);
-  if (p.strikes > 0 && !damage && !p.pierce) b.tempo = true;
-  log(
-    b,
-    `${p.name}: ${damage ? `${damage} strike${damage === 1 ? '' : 's'}.` : 'no strikes through.'}`,
-  );
-  addStrikes(b, damage);
-  if (b.status !== 'playing') return true;
-  if (p.balls) addBalls(b, p.balls);
-  if (b.status !== 'playing') return true;
-  if (p.junk) {
-    b.drawPile.push({ id: 'junk', uid: `junk-${b.turn}`, upgraded: false });
-    b.drawPile = shuffle(b, b.drawPile);
+  const result = previewAtBat(b),
+    side = b.side;
+  b.showdownMargins[battingTeam(b)] = result.margin;
+  log(b, `${side === 'offense' ? 'Your at-bat' : 'Enemy at-bat'}: ${result.label}.`);
+  if (side === 'defense') {
+    if (result.speedSaved) b.speedUsed = true;
+    if (result.gloveSaved) b.gloveUsed = true;
   }
-  if (p.runners && b.bases.some(Boolean)) {
-    if (b.relics.includes('glove') && !b.gloveUsed) {
-      b.gloveUsed = true;
-      log(b, 'Old Glove saves your runners.');
-    } else {
-      for (let n = 0; n < p.runners; n++) {
-        const i = b.bases.lastIndexOf(true);
-        if (i >= 0) {
-          b.bases[i] = false;
-          log(b, 'Lead runner removed.');
-        }
+  if (result.kind === 'walk') scoreRuns(b, walk(b.bases));
+  else if (result.kind === 'hit') {
+    scoreRuns(b, baseHit(b.bases, result.bases));
+    if (side === 'offense' && b.status === 'playing') {
+      b.firstHit = true;
+      if (b.character === 'speed' && !b.speedUsed && result.bases === 1) {
+        b.speedUsed = true;
+        scoreRuns(b, advance(b.bases, 1, false));
       }
     }
+  } else {
+    if (side === 'offense' && b.forced === 'out' && b.outs < 2 && b.sacrificeAdvance)
+      scoreRuns(b, advance(b.bases, b.sacrificeAdvance));
+    const turnTwo = side === 'defense' && b.doubleplay && b.bases[0];
+    if (side === 'offense' && b.risk) {
+      const i = b.bases.lastIndexOf(true);
+      if (i >= 0) {
+        b.bases[i] = false;
+        recordOut(b);
+      }
+    }
+    if (turnTwo) b.bases[0] = false;
+    recordOut(b);
+    if (turnTwo && b.status === 'playing') recordOut(b);
   }
-  if (b.turn >= 40) {
-    b.status = 'lost';
-    log(b, 'Stadium curfew. The inning is called after 40 turns.');
-  } else startTurn(b);
+  b.discard.push(...b.hand);
+  b.hand = [];
+  if (b.status === 'playing') {
+    if (b.showdown) finishHalf(b);
+    else startTurn(b);
+  }
   return true;
 }

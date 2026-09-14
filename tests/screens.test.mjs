@@ -1,62 +1,78 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRun, enterNode, finishBattle, chooseReward } from '../dist/js/engine/run.js';
-import * as Screens from '../dist/js/ui/screens.js';
+import * as S from '../dist/js/ui/screens.js';
 import { deckContent, helpContent } from '../dist/js/ui/modals.js';
-
-function checkMarkup(markup) {
-  assert.ok(markup.length > 100);
-  assert.doesNotMatch(markup, /\bundefined\b|\bNaN\b/);
-  assert.equal(
-    (markup.match(/<button\b/g) || []).length,
-    (markup.match(/<\/button\s*>/g) || []).length,
-  );
-}
-
-test('Title, each roster, deck inspection, and route render from their public state', () => {
-  checkMarkup(Screens.titleScreen('dean', null));
-  checkMarkup(helpContent());
-  for (const id of ['dean', 'speed', 'captain']) {
-    const run = createRun(id, 19);
-    checkMarkup(Screens.rosterScreen(id));
-    checkMarkup(deckContent(run));
-    checkMarkup(Screens.mapScreen(run));
-    enterNode(run, '1-0');
-    const battle = Screens.battleScreen(run);
-    checkMarkup(battle);
-    assert.equal((battle.match(/--fan-x:/g) || []).length, 5);
+import * as R from '../dist/js/engine/run.js';
+import { recordOut, advanceHalf } from '../dist/js/engine/battle.js';
+const check = (s) => {
+  assert.doesNotMatch(s, /undefined|NaN/);
+  assert.ok(s.length > 100);
+};
+test('Title, roster, route, paired deck and help render with new mechanics', () => {
+  check(S.titleScreen('dean', null));
+  check(helpContent());
+  for (const c of ['dean', 'speed', 'captain']) {
+    const r = R.createRun(c, 1);
+    check(S.rosterScreen(c));
+    check(S.mapScreen(r));
+    const d = deckContent(r);
+    check(d);
+    assert.match(d, /OFFENSE/);
+    assert.match(d, /DEFENSE/);
   }
 });
-
-test('Reward and every between-inning screen render valid choices', () => {
-  for (const stop of ['rest', 'training', 'event', 'shop']) {
-    const run = createRun('dean', 4);
-    enterNode(run, '1-0');
-    run.battle.node.stop = stop;
-    run.battle.status = 'won';
-    run.battle.runs = run.battle.target;
-    finishBattle(run);
-    checkMarkup(Screens.rewardScreen(run));
-    chooseReward(run, 'skip');
-    checkMarkup(
-      stop === 'shop'
-        ? Screens.shopScreen(run)
-        : stop === 'event'
-          ? Screens.eventScreen(run)
-          : Screens.restScreen(run),
+test('Field swaps player and enemy poses after three outs and exposes the new active card face', () => {
+  const r = R.createRun('dean', 1);
+  R.enterNode(r, r.map[0][0].id);
+  let s = S.battleScreen(r);
+  check(s);
+  assert.match(s, /YOU BAT/);
+  assert.match(s, /bruiser-pitching/);
+  assert.doesNotMatch(s, /card-reverse|Reverse:/);
+  assert.match(s, /Scrapyard Bruisers \(H\)/);
+  assert.match(s, /player-unit at-plate/);
+  recordOut(r.battle);
+  recordOut(r.battle);
+  recordOut(r.battle);
+  check(S.battleScreen(r));
+  assert.match(S.battleScreen(r), /SWITCH SIDES/);
+  advanceHalf(r.battle);
+  s = S.battleScreen(r);
+  check(s);
+  assert.match(s, /YOU PITCH/);
+  assert.match(s, /dean-pitching/);
+  assert.match(s, /bruiser-batting/);
+  assert.doesNotMatch(s, /card-reverse|Reverse:/);
+  assert.match(s, /player-unit at-mound/);
+  assert.match(S.battleScreen(r, true, true), /side-transition/);
+  assert.doesNotMatch(deckContent(r, 'view', 'drawPile'), /card-reverse/);
+});
+test('Every reward, dugout, service and result screen renders from its public phase', () => {
+  for (const stop of ['rest', 'training', 'shop', 'event']) {
+    const r = R.createRun('captain', 1);
+    R.enterNode(r, r.map[0][0].id);
+    r.battle.status = 'won';
+    R.finishBattle(r);
+    check(S.rewardScreen(r));
+    assert.match(S.rewardScreen(r), /card-reverse/);
+    R.chooseReward(r, 'skip');
+    check(S.mapScreen(r));
+    assert.match(S.mapScreen(r), /Games and branching stops map/);
+    assert.equal(
+      (S.mapScreen(r).match(/class="journey-node route-stop available/g) || []).length,
+      4,
+    );
+    R.chooseStop(r, stop);
+    check(
+      { rest: S.restScreen, training: S.restScreen, shop: S.shopScreen, event: S.eventScreen }[
+        stop
+      ](r),
     );
   }
-});
-
-test('Final result and pile inspection tolerate empty piles', () => {
-  const run = createRun('speed', 8);
-  enterNode(run, '1-0');
-  for (const pile of ['drawPile', 'discard', 'exhausted'])
-    checkMarkup(deckContent(run, 'view', pile));
-  run.battle.status = 'lost';
-  finishBattle(run);
-  checkMarkup(Screens.endScreen(run));
-  run.phase = 'won';
-  run.completed = 9;
-  checkMarkup(Screens.endScreen(run));
+  const r = R.createRun('speed', 1);
+  R.enterNode(r, r.map[0][0].id);
+  r.phase = 'lost';
+  check(S.endScreen(r));
+  r.phase = 'won';
+  check(S.endScreen(r));
 });

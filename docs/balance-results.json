@@ -1,88 +1,277 @@
 {
-  "date": "2026-09-10T17:52:18.434Z",
+  "date": "2026-09-13T15:26:03.166Z",
   "seedStart": 10000,
-  "notes": "One-card lookahead agents on low-risk routes with deterministic upgrade and shopping choices. Not human win rates.",
+  "notes": "One-card lookahead on regular routes, with shared reward rankings and rest/upgrade choices. Not human win rates.",
   "results": [
     {
       "character": "dean",
       "policy": "tactical",
-      "samples": 300,
-      "wins": 201,
-      "winRate": 67,
-      "averageInning": 8.6,
-      "averageTurns": 32.3
-    },
-    {
-      "character": "dean",
-      "policy": "greedy",
-      "samples": 300,
-      "wins": 0,
-      "winRate": 0,
-      "averageInning": 6.28,
-      "averageTurns": 20.2
+      "samples": 100,
+      "wins": 58,
+      "winRate": 58,
+      "averageSeries": 7.83,
+      "games": 1812,
+      "gameWinRate": 87.3,
+      "runsPerGame": 7.94,
+      "allowedPerGame": 3.7,
+      "atBatsPerGame": 34.9,
+      "acts": [
+        {
+          "act": 1,
+          "games": 652,
+          "wins": 598
+        },
+        {
+          "act": 2,
+          "games": 635,
+          "wins": 578
+        },
+        {
+          "act": 3,
+          "games": 525,
+          "wins": 406
+        }
+      ]
     },
     {
       "character": "dean",
       "policy": "random",
-      "samples": 300,
-      "wins": 70,
-      "winRate": 23.3,
-      "averageInning": 7.62,
-      "averageTurns": 37.1
+      "samples": 100,
+      "wins": 0,
+      "winRate": 0,
+      "averageSeries": 0.95,
+      "games": 461,
+      "gameWinRate": 45.8,
+      "runsPerGame": 5.44,
+      "allowedPerGame": 5.88,
+      "atBatsPerGame": 35,
+      "acts": [
+        {
+          "act": 1,
+          "games": 370,
+          "wins": 170
+        },
+        {
+          "act": 2,
+          "games": 88,
+          "wins": 40
+        },
+        {
+          "act": 3,
+          "games": 3,
+          "wins": 1
+        }
+      ]
+    },
+    {
+      "character": "dean",
+      "policy": "offense-only",
+      "samples": 100,
+      "wins": 0,
+      "winRate": 0,
+      "averageSeries": 0,
+      "games": 200,
+      "gameWinRate": 0,
+      "runsPerGame": 7.42,
+      "allowedPerGame": 22.5,
+      "atBatsPerGame": 50.5,
+      "acts": [
+        {
+          "act": 1,
+          "games": 200,
+          "wins": 0
+        },
+        {
+          "act": 2,
+          "games": 0,
+          "wins": 0
+        },
+        {
+          "act": 3,
+          "games": 0,
+          "wins": 0
+        }
+      ]
     },
     {
       "character": "speed",
       "policy": "tactical",
-      "samples": 300,
-      "wins": 179,
-      "winRate": 59.7,
-      "averageInning": 8.52,
-      "averageTurns": 36
-    },
-    {
-      "character": "speed",
-      "policy": "greedy",
-      "samples": 300,
-      "wins": 0,
-      "winRate": 0,
-      "averageInning": 5.86,
-      "averageTurns": 21.4
+      "samples": 100,
+      "wins": 71,
+      "winRate": 71,
+      "averageSeries": 6.92,
+      "games": 1548,
+      "gameWinRate": 89.7,
+      "runsPerGame": 6.5,
+      "allowedPerGame": 2.5,
+      "atBatsPerGame": 30.6,
+      "acts": [
+        {
+          "act": 1,
+          "games": 595,
+          "wins": 481
+        },
+        {
+          "act": 2,
+          "games": 497,
+          "wins": 472
+        },
+        {
+          "act": 3,
+          "games": 456,
+          "wins": 435
+        }
+      ]
     },
     {
       "character": "speed",
       "policy": "random",
-      "samples": 300,
-      "wins": 50,
-      "winRate": 16.7,
-      "averageInning": 7.64,
-      "averageTurns": 43.2
+      "samples": 100,
+      "wins": 0,
+      "winRate": 0,
+      "averageSeries": 0.05,
+      "games": 217,
+      "gameWinRate": 6.5,
+      "runsPerGame": 4.53,
+      "allowedPerGame": 10.21,
+      "atBatsPerGame": 35.9,
+      "acts": [
+        {
+          "act": 1,
+          "games": 209,
+          "wins": 9
+        },
+        {
+          "act": 2,
+          "games": 8,
+          "wins": 5
+        },
+        {
+          "act": 3,
+          "games": 0,
+          "wins": 0
+        }
+      ]
+    },
+    {
+      "character": "speed",
+      "policy": "offense-only",
+      "samples": 100,
+      "wins": 0,
+      "winRate": 0,
+      "averageSeries": 0,
+      "games": 200,
+      "gameWinRate": 0,
+      "runsPerGame": 4.14,
+      "allowedPerGame": 22.5,
+      "atBatsPerGame": 46.3,
+      "acts": [
+        {
+          "act": 1,
+          "games": 200,
+          "wins": 0
+        },
+        {
+          "act": 2,
+          "games": 0,
+          "wins": 0
+        },
+        {
+          "act": 3,
+          "games": 0,
+          "wins": 0
+        }
+      ]
     },
     {
       "character": "captain",
       "policy": "tactical",
-      "samples": 300,
-      "wins": 216,
-      "winRate": 72,
-      "averageInning": 8.69,
-      "averageTurns": 42.4
-    },
-    {
-      "character": "captain",
-      "policy": "greedy",
-      "samples": 300,
-      "wins": 0,
-      "winRate": 0,
-      "averageInning": 4.17,
-      "averageTurns": 17.6
+      "samples": 100,
+      "wins": 37,
+      "winRate": 37,
+      "averageSeries": 6.43,
+      "games": 1544,
+      "gameWinRate": 84.8,
+      "runsPerGame": 6.18,
+      "allowedPerGame": 2.81,
+      "atBatsPerGame": 32.2,
+      "acts": [
+        {
+          "act": 1,
+          "games": 641,
+          "wins": 579
+        },
+        {
+          "act": 2,
+          "games": 577,
+          "wins": 482
+        },
+        {
+          "act": 3,
+          "games": 326,
+          "wins": 248
+        }
+      ]
     },
     {
       "character": "captain",
       "policy": "random",
-      "samples": 300,
-      "wins": 98,
-      "winRate": 32.7,
-      "averageInning": 7.98,
-      "averageTurns": 54.8
+      "samples": 100,
+      "wins": 0,
+      "winRate": 0,
+      "averageSeries": 0.19,
+      "games": 257,
+      "gameWinRate": 18.3,
+      "runsPerGame": 3.56,
+      "allowedPerGame": 8.19,
+      "atBatsPerGame": 36.1,
+      "acts": [
+        {
+          "act": 1,
+          "games": 242,
+          "wins": 40
+        },
+        {
+          "act": 2,
+          "games": 13,
+          "wins": 7
+        },
+        {
+          "act": 3,
+          "games": 2,
+          "wins": 0
+        }
+      ]
+    },
+    {
+      "character": "captain",
+      "policy": "offense-only",
+      "samples": 100,
+      "wins": 0,
+      "winRate": 0,
+      "averageSeries": 0,
+      "games": 200,
+      "gameWinRate": 0,
+      "runsPerGame": 6.04,
+      "allowedPerGame": 22.5,
+      "atBatsPerGame": 48.6,
+      "acts": [
+        {
+          "act": 1,
+          "games": 200,
+          "wins": 0
+        },
+        {
+          "act": 2,
+          "games": 0,
+          "wins": 0
+        },
+        {
+          "act": 3,
+          "games": 0,
+          "wins": 0
+        }
+      ]
     }
   ]
 }

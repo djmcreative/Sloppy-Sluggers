@@ -10,7 +10,13 @@ These are full-resolution, flattened RGBA exports, ready to import into an image
 
 The original ZIP's `piskel files` folder was empty. Editable Piskel projects, layer data, and animation frames were not supplied and have not been invented. The PNGs remain flattened raster images, with their original transparency and dimensions.
 
-`dist/js/data/assets.js` resolves artwork names and maps the player characters to their custom PNGs. `dist/js/data/card-art.js` assigns character illustrations to cards; remaining cards use equipment and action icons. Change an entry to replace one card's artwork. Card borders, cost badges, type labels, and descriptions are rendered separately, so none of that text is baked into a PNG.
+`dist/js/data/assets.js` resolves artwork names and maps characters to their custom PNGs. Each face in `dist/js/data/cards.js` chooses an equipment or action icon. Card borders, costs, face labels and descriptions are rendered separately, so none of that text is baked into a PNG.
+
+## Two-way character sprites
+
+`dist/assets/art/two-way/` adds nine transparent PNGs: a pitching pose for each player, plus matching pitching and batting poses for the Scrapyard Bruiser, Nightshift Phantom and Inferno King. These replace ordinary-looking opponents with baseball-themed villains while preserving the player's yellow-and-red uniforms.
+
+All nine were created with the built-in ImageGen tool. They retain their native generated dimensions (approximately 1,216–1,230 pixels wide and 1,278–1,294 pixels high), with real alpha transparency. They are displayed smaller by the game and are not animation sheets. Exact dimensions and alpha evidence are in `two-way-art/alpha-evidence.json`; all generation and correction prompts are in `two-way-art/final-manifest.json`. Original photos are not included.
 
 Pixelify Sans is distributed locally under the SIL Open Font License. Its font and license are in `dist/assets/fonts/`. Source: [Google Fonts / Pixelify Sans](https://github.com/google/fonts/tree/main/ofl/pixelifysans).
 

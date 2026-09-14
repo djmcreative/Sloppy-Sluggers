@@ -1,60 +1,68 @@
 # Sloppy Sluggers
 
-A complete, playable first act of a baseball deckbuilding roguelike: three characters, nine innings, connected routes, redesigned cards, equipment, shops, events, upgrades, and local saving.
+See [Terminology and controls](TERMINOLOGY-README.md) for Contact, Pitch, Field, pitcher adjustment, and drag-to-play. Games and rest/shop/event stops are connected map nodes. — Two-Way Baseball
+
+A playable baseball deckbuilding roguelike with three player characters, three acts, branching opponent choices, and best-of-three series. Play both offense and defense with a deck of fixed double-sided cards.
 
 ## Play locally
 
 Install Node.js 20 or newer, open this folder in a terminal, and run:
 
-```sh
-node scripts/serve.mjs
-```
+    npm start
 
-Open `http://127.0.0.1:4173`. There are no packages to install and no build step. The server binds to your own computer only. ES modules require a local web server; double-clicking the HTML file is not supported.
+Open http://127.0.0.1:4173. No packages to install and no build step. Double-clicking the HTML file is not supported because the game uses JavaScript modules.
 
-The complete deployable game is in `dist/`. It can be hosted by any ordinary static web host, or wrapped in a desktop application. It makes no external API calls while playing, has no analytics, and does not need an AI service. The pixel font is included locally.
+## Play on GitHub Pages
 
-## Source organization
+Upload the extracted project contents to your repository root. Keep index.html, .nojekyll, package.json, README.md, and the dist folder at the same level. The root launch page opens dist/.
 
-| Folder                        | Purpose                                                                           |
-| ----------------------------- | --------------------------------------------------------------------------------- |
-| `dist/js/data/`               | Cards, upgrade values, characters, pitcher types, equipment, and artwork mappings |
-| `dist/js/engine/`             | Combat, baserunning, seeded randomness, run progression, shops, and save storage  |
-| `dist/js/ui/`                 | Screen rendering, reusable cards, route drawing, dialogs, and optional sound      |
-| `dist/js/main.js`             | Application startup, actions, and keyboard controls                               |
-| `dist/styles/`                | Base layout, screen layout, cards, and the pixel game theme                       |
-| `dist/assets/art/originals/`  | All 32 supplied PNG files, unchanged                                              |
-| `dist/assets/art/characters/` | Six custom transparent PNGs: batting stances and selection portraits              |
-| `dist/assets/fonts/`          | Local Pixelify Sans font and its license                                          |
-| `tests/`                      | Automated rules and screen-rendering checks                                       |
-| `scripts/`                    | Local server, validation, and deterministic balance simulations                   |
-| `docs/`                       | Current rules, balance evidence, and asset notes                                  |
+In Settings > Pages, select Deploy from a branch, choose your uploaded branch (usually main), and / (root). After deployment finishes, open the Pages website link. Do not upload only the ZIP file.
 
-Card effects are data commands rather than embedded UI behavior. The engine works in both the browser and Node. Game state is serializable, including the random generator, so resuming a save preserves future draws.
+Other static hosts can publish dist/ directly. The game makes no external API calls while playing; art and the font are included. No AI service is required to run it.
+
+## The new game loop
+
+- Three acts, each containing three best-of-three series.
+- Every game lasts three innings, with offense and defense in each inning.
+- Win by outscoring the opponent. Two wins advance the series; two losses in the same series end the run.
+- Each turn is one full at-bat. Play cards, read the predicted result, and resolve.
+- Each of the 27 cards has an offensive and defensive face. Both are visible when choosing rewards or inspecting the deck.
+- A tied game goes to one bases-loaded at-bat per team, with a published tie-break rule.
+- Between games, choose one stop: recovery/upgrades, training, a shop, or an event.
+
+See docs/DESIGN.md for the complete current rules and docs/CARDS.md for all card faces and upgrades. This document replaces the older target-runs design for this build.
+
+## Organized source
+
+| Folder                      | Purpose                                                                                          |
+| --------------------------- | ------------------------------------------------------------------------------------------------ |
+| dist/js/data/               | Paired card definitions, characters, opponents, equipment, asset names                           |
+| dist/js/engine/             | Baseball advancement, match state, series/run state, routes, deterministic randomness and saving |
+| dist/js/ui/                 | Screens, paired cards, route display, help dialogs and optional sound                            |
+| dist/js/main.js             | Input handling and application startup                                                           |
+| dist/styles/                | Base layout, card styling, stadium theme and two-way match layout                                |
+| dist/assets/art/originals/  | 32 original supplied PNGs, preserved                                                             |
+| dist/assets/art/characters/ | Three custom batting sprites and three selection portraits                                       |
+| dist/assets/art/two-way/    | Three player pitching sprites and six enemy batting/pitching sprites                             |
+| dist/assets/fonts/          | Local pixel font and its license                                                                 |
+| tests/                      | Match, series, map, save and rendering regression checks                                         |
+| scripts/                    | Local server, asset validation and balance simulations                                           |
+| docs/                       | Current design, complete card catalog, balance evidence and art provenance                       |
 
 ## Controls
 
-- Click cards, or use 1–9 to play cards from the hand.
-- End Turn resolves the visible pitch and draws a new hand.
-- Space ends the turn when a button is not focused; Enter or Space activates focused buttons.
-- D opens the permanent deck. Escape closes a dialog.
-- The sound icon enables optional arcade tones; sound starts muted.
-- The fullscreen icon requests browser fullscreen where supported.
+Drag cards onto the field, click them, or press 1–9. Drop outside the field or press Escape to cancel a drag. Space resolves the current at-bat, or switches sides when the half ends. D opens the paired deck. Escape closes a dialog. Sound starts muted and can be enabled from the top bar.
 
-## Validation
+## Checks
 
-```sh
-node --test tests/*.test.mjs
-node scripts/validate.mjs
-node scripts/balance.mjs 500
-```
+    npm test
+    npm run validate
+    npm run balance -- 100
 
-The simulation report is written to `docs/balance-results.json`. The agents use limited heuristics, not human play. See `docs/BALANCE.md` before interpreting the results.
+Balance simulations use limited deterministic policies. Their win rates are not human win rates. See docs/BALANCE.md for results and limitations.
 
-## Scope of this build
+## Saves and scope
 
-This is a first-act playtest build, not a finished commercial release. It includes the complete nine-inning loop and victory/defeat states. There are no further acts, platform achievements, controller support, cloud saves, soundtrack, or frame-by-frame character animation yet. Sprites have simple interface motion; they are not full animation sheets. Some cards share existing artwork and can be replaced individually through `card-art.js`.
+The two-way rules use a new versioned local save. Older target-run saves are left untouched but cannot be resumed under the new mechanics. Saves are local to a browser and website address; moving from localhost to GitHub Pages starts a separate save.
 
-Saves belong to the browser and origin where you play. The local preview and private hosted version have separate saves. Starting a new run asks before replacing an unfinished save.
-
-No third-party game art was copied. Visual references requested by the owner informed the layout and presentation. The game includes the owner's supplied baseball art and six custom player illustrations generated from the supplied photo references. See `docs/ART.md` for asset details and generation prompts.
+This is a playtest build. It includes all three acts and complete win/loss states, but does not include frame-by-frame animation, a soundtrack, online multiplayer, cloud saves or controller support. The included PNGs are ordinary flattened images you can import into other tools. The original art and photo-based batting portraits are preserved; new generated sprites are separately documented.

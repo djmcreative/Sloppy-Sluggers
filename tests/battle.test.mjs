@@ -1,198 +1,282 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createRun, enterNode } from '../dist/js/engine/run.js';
 import {
-  createRun,
-  enterNode,
-  finishBattle,
-  chooseReward,
-  buy,
-  nextInning,
-  reachable,
-} from '../dist/js/engine/run.js';
-import {
-  addStrikes,
-  addBalls,
-  advanceRunners,
-  hit,
   playCard,
+  canPlay,
   endTurn,
+  advanceHalf,
+  recordOut,
+  previewAtBat,
 } from '../dist/js/engine/battle.js';
-import { CARDS, definition, description, rewardPool } from '../dist/js/data/cards.js';
-function setup(character = 'dean', seed = 13) {
-  const run = createRun(character, seed);
-  enterNode(run, '1-0');
-  run.battle.target = 3;
-  return { run, b: run.battle };
-}
-
-test('Strike overflow records outs and carries remaining strikes', () => {
-  const { b } = setup();
-  b.strikes = 2;
-  addStrikes(b, 3);
-  assert.equal(b.outs, 1);
-  assert.equal(b.strikes, 2);
-  assert.equal(b.balls, 0);
+import { advance, baseHit, walk } from '../dist/js/engine/baseball.js';
+import { CARDS, definition, description } from '../dist/js/data/cards.js';
+const battle = (character = 'captain') => {
+  const r = createRun(character, 123);
+  enterNode(r, r.map[0][0].id);
+  return r.battle;
+};
+const hold = (b, id) => {
+  const c = { id, uid: 'fixture', upgraded: false };
+  b.hand = [c];
+  b.energy = 10;
+  return c.uid;
+};
+test('Both teams use identical hit, walk and runner advancement rules', () => {
+  const loaded = [true, true, true];
+  assert.equal(baseHit(loaded, 4), 4);
+  assert.deepEqual(loaded, [false, false, false]);
+  const gap = [false, true, true];
+  assert.equal(walk(gap), 0);
+  assert.deepEqual(gap, [true, true, true]);
+  assert.equal(walk(gap), 1);
+  assert.deepEqual(gap, [true, true, true]);
+  const lead = [true, true, true];
+  assert.equal(advance(lead, 1, false), 1);
+  assert.deepEqual(lead, [true, true, false]);
 });
-test('Three outs end play; additional strikes and turns cannot change state', () => {
-  const { b } = setup();
-  addStrikes(b, 12);
-  assert.equal(b.status, 'lost');
-  assert.equal(b.outs, 3);
-  const before = JSON.stringify(b);
+test('All 27 cards have fixed valid faces and meaningful upgrade copy', () => {
+  assert.equal(Object.keys(CARDS).length, 27);
+  for (const id of Object.keys(CARDS))
+    for (const side of ['offense', 'defense'])
+      for (const upgraded of [false, true]) {
+        const c = { id, upgraded };
+        assert.ok(definition(c, side).cost >= 0);
+        assert.ok(description(c, side));
+        assert.doesNotMatch(description(c, side), /undefined|NaN/);
+      }
+});
+test('Three outs switch sides without ending the match; bases and exhausted cards reset', () => {
+  const b = battle();
+  b.score.player = 5;
+  b.bases = [true, true, true];
+  playCard(b, hold(b, 'load'));
+  recordOut(b);
+  recordOut(b);
+  recordOut(b);
+  assert.equal(b.status, 'switch');
   assert.equal(endTurn(b), false);
-  assert.equal(JSON.stringify(b), before);
-});
-test('A walk advances only forced runners and clears count', () => {
-  const { b } = setup();
-  b.bases = [false, true, true];
-  b.strikes = 2;
-  addBalls(b, 4);
-  assert.deepEqual(b.bases, [true, true, true]);
-  assert.equal(b.runs, 0);
-  assert.equal(b.strikes, 0);
-  addBalls(b, 4);
-  assert.equal(b.runs, 1);
-});
-test('Singles and home runs move runners without overwriting', () => {
-  const { b } = setup('captain');
-  b.bases = [true, true, true];
-  hit(b, 1);
-  assert.equal(b.runs, 1);
-  assert.deepEqual(b.bases, [true, true, true]);
-  hit(b, 4);
-  assert.equal(b.runs, 5);
+  advanceHalf(b);
+  assert.equal(b.side, 'defense');
+  assert.equal(b.inning, 1);
+  assert.equal(b.outs, 0);
+  assert.equal(b.score.player, 5);
   assert.deepEqual(b.bases, [false, false, false]);
-  assert.equal(b.status, 'won');
+  assert.equal(b.exhausted.length, 0);
+  assert.equal(b.hand.length + b.drawPile.length, 12);
 });
-test('A steal can score the lead runner while preserving trailing runners', () => {
-  const { b } = setup();
-  b.bases = [true, true, true];
-  advanceRunners(b, 1, false);
-  assert.equal(b.runs, 1);
-  assert.deepEqual(b.bases, [true, true, false]);
-});
-test('Speedster perk fires only on the first single each turn', () => {
-  const { b } = setup('speed');
-  hit(b, 1);
-  assert.deepEqual(b.bases, [false, true, false]);
-  hit(b, 1);
-  assert.deepEqual(b.bases, [true, false, true]);
-});
-test('Successful foul earns one draw next turn and resets foul', () => {
-  const { b } = setup();
-  b.pitch = { name: 'Test', strikes: 2 };
-  b.foul = 2;
-  endTurn(b);
-  assert.equal(b.strikes, 0);
-  assert.equal(b.hand.length, 6);
-  assert.equal(b.foul, 0);
-});
-test('Unblockable pitches ignore foul and do not grant tempo', () => {
-  const { b } = setup();
-  b.pitch = { name: 'Corner', strikes: 1, pierce: true };
-  b.foul = 50;
-  endTurn(b);
-  assert.equal(b.strikes, 1);
-  assert.equal(b.hand.length, 5);
-});
-test('Bad Read stays out of the permanent deck', () => {
-  const { run, b } = setup();
-  b.pitch = { name: 'Curve', strikes: 0, junk: true };
-  endTurn(b);
-  assert.equal([...b.hand, ...b.drawPile].filter((c) => c.id === 'junk').length, 1);
-  assert.equal(
-    run.deck.some((c) => c.id === 'junk'),
-    false,
-  );
-});
-test('Winning hit resolves before later self-damage', () => {
-  const { b } = setup();
-  b.runs = 2;
-  b.bases = [false, false, true];
-  b.outs = 2;
-  b.strikes = 2;
-  b.hand = [{ id: 'muscle', uid: 'test' }];
-  b.energy = 3;
-  assert.equal(playCard(b, 'test'), true);
-  assert.equal(b.status, 'won');
-  assert.equal(b.outs, 2);
-});
-test('Illegal card IDs and insufficient energy have no side effects', () => {
-  const { b } = setup();
-  b.energy = 0;
+test('The same card uses the defensive face and its own energy cost after a side switch', () => {
+  const b = battle();
+  b.side = 'defense';
+  const uid = hold(b, 'drive');
+  b.energy = 1;
+  assert.equal(canPlay(b, uid), true);
+  playCard(b, uid);
+  assert.equal(b.energy, 0);
+  assert.equal(b.pitch, 1);
+  assert.equal(b.contact, 0);
   const before = JSON.stringify(b);
   assert.equal(playCard(b, 'missing'), false);
-  const costly = b.hand.find((c) => definition(c).cost > 0);
-  assert.equal(playCard(b, costly.uid), false);
   assert.equal(JSON.stringify(b), before);
 });
-test('Restoring serialized state preserves random draws and pitches', () => {
-  const { b } = setup();
-  const restored = JSON.parse(JSON.stringify(b));
+test('An at-bat resolves one hit, not one hit per card; contact thresholds yield extra bases', () => {
+  const b = battle();
+  b.intent.strength = 4;
+  b.contact = 6;
+  assert.equal(previewAtBat(b).bases, 2);
+  b.bases = [true, false, false];
   endTurn(b);
-  endTurn(restored);
-  assert.deepEqual(restored, b);
+  assert.equal(b.score.player, 0);
+  assert.deepEqual(b.bases, [false, true, true]);
+  assert.equal(b.halfTurn, 2);
 });
-test('Every card and upgrade has valid display copy', () => {
-  for (const id of Object.keys(CARDS)) {
-    for (const upgraded of [false, true]) {
-      const card = { id, upgraded };
-      assert.ok(description(card).length > 0);
-      assert.ok(Number.isFinite(definition(card).cost));
-    }
-  }
+test('Pitch reduces Contact and Field removes hit bases; prediction matches scoring', () => {
+  const b = battle();
+  b.side = 'defense';
+  b.intent.strength = 8;
+  b.pitch = 3;
+  b.field = 1;
+  assert.equal(previewAtBat(b).bases, 2);
+  b.bases = [false, false, true];
+  endTurn(b);
+  assert.equal(b.score.enemy, 1);
+  b.intent.strength = 4;
+  b.pitch = 2;
+  b.field = 1;
+  const outs = b.outs;
+  assert.equal(previewAtBat(b).kind, 'out');
+  endTurn(b);
+  assert.equal(b.outs, outs + 1);
 });
-test('All character reward pools exclude other characters', () => {
-  for (const c of ['dean', 'speed', 'captain'])
-    for (const id of rewardPool(c)) {
-      assert.ok(!CARDS[id].class || CARDS[id].class === c);
-    }
+test('Double plays remove the runner on first and never record a fourth out', () => {
+  const b = battle();
+  b.side = 'defense';
+  b.pitch = 99;
+  b.doubleplay = true;
+  b.bases = [true, false, false];
+  b.outs = 1;
+  endTurn(b);
+  assert.equal(b.outs, 3);
+  assert.equal(b.status, 'switch');
+  assert.equal(b.bases[0], false);
+  const c = battle();
+  c.side = 'defense';
+  c.pitch = 99;
+  c.doubleplay = true;
+  c.bases = [true, false, false];
+  c.outs = 2;
+  endTurn(c);
+  assert.equal(c.outs, 3);
 });
-test('Rewards are applied once and all legal routes contain exactly nine combats', () => {
-  for (const lane of [0, 1, 2]) {
-    const run = createRun('dean');
-    for (let i = 1; i <= 9; i++) {
-      const options = run.map[i - 1].filter((n) => reachable(run, n));
-      const node = options[lane % options.length];
-      assert.ok(reachable(run, node));
-      assert.ok(enterNode(run, node.id));
-      run.battle.status = 'won';
-      run.battle.runs = node.target;
-      assert.ok(finishBattle(run));
-      assert.equal(finishBattle(run), false);
-      if (i === 9) {
-        assert.equal(run.phase, 'won');
-        break;
-      }
-      chooseReward(run, 'skip');
-      assert.equal(chooseReward(run, 'skip'), false);
-      nextInning(run);
-    }
-    assert.equal(run.completed, 9);
-  }
+test('Pickoff can end a half immediately and further card effects cannot cross the transition', () => {
+  const b = battle('speed');
+  b.side = 'defense';
+  b.outs = 2;
+  b.bases = [false, true, false];
+  playCard(b, hold(b, 'steal'));
+  assert.equal(b.status, 'switch');
+  assert.equal(b.outs, 3);
+  assert.equal(b.bases[1], false);
 });
-test('Shop purchases cannot duplicate and cannot spend unavailable cash', () => {
-  const { run, b } = setup();
-  b.node.stop = 'shop';
-  b.status = 'won';
-  finishBattle(run);
-  chooseReward(run, 'skip');
-  run.cash = 40;
-  const uid = run.shop.cards[0].card.uid;
-  const count = run.deck.length;
-  assert.ok(buy(run, 'card', uid));
-  assert.equal(run.cash, 0);
-  assert.equal(run.deck.length, count + 1);
-  assert.equal(buy(run, 'card', uid), false);
-  assert.equal(buy(run, 'relic'), false);
+test('Final-inning home advantage skips an unnecessary bottom half', () => {
+  const b = battle();
+  b.home = true;
+  b.inning = 3;
+  b.half = 0;
+  b.side = 'defense';
+  b.score = { player: 5, enemy: 3 };
+  b.outs = 2;
+  recordOut(b);
+  assert.equal(b.status, 'won');
 });
-test('Power card effects never stack beyond one', () => {
-  const { b } = setup();
-  b.hand = [
-    { id: 'discipline', uid: 'a' },
-    { id: 'discipline', uid: 'b' },
+test('A home walk-off ends the game immediately, even when an advance card scores it', () => {
+  const b = battle('speed');
+  b.home = true;
+  b.inning = 3;
+  b.half = 1;
+  b.lines = [
+    { player: 0, enemy: 0 },
+    { player: 0, enemy: 0 },
+    { player: 0, enemy: 0 },
   ];
-  playCard(b, 'a');
-  playCard(b, 'b');
-  assert.equal(b.powers.discipline, 1);
+  b.score = { player: 2, enemy: 2 };
+  b.bases = [false, false, true];
+  playCard(b, hold(b, 'steal'));
+  assert.equal(b.status, 'won');
+  assert.equal(b.score.player, 3);
+  assert.equal(endTurn(b), false);
+});
+test('A tied three-inning game gets exactly one bases-loaded showdown at-bat per team', () => {
+  const b = battle();
+  b.inning = 3;
+  b.half = 1;
+  b.side = 'defense';
+  b.lines = [
+    { player: 0, enemy: 0 },
+    { player: 0, enemy: 0 },
+    { player: 0, enemy: 0 },
+  ];
+  b.outs = 2;
+  recordOut(b);
+  assert.equal(b.status, 'switch');
+  advanceHalf(b);
+  assert.equal(b.showdown, true);
+  assert.deepEqual(b.bases, [true, true, true]);
+  b.contact = b.intent.strength + 6;
+  endTurn(b);
+  assert.equal(b.score.player, 4);
+  assert.equal(b.status, 'switch');
+  advanceHalf(b);
+  b.pitch = b.intent.strength;
+  endTurn(b);
+  assert.equal(b.status, 'won');
+  assert.equal(b.inning, 4);
+});
+test('Exact showdown ties use the published home-field rule without an endless loop', () => {
+  const b = battle();
+  b.inning = 4;
+  b.lines.push({ player: 0, enemy: 0 }, { player: 0, enemy: 0 }, { player: 0, enemy: 0 });
+  b.showdown = true;
+  b.half = 1;
+  b.side = 'defense';
+  b.score = { player: 0, enemy: 0 };
+  b.showdownMargins.player = 0;
+  b.pitch = b.intent.strength;
+  endTurn(b);
+  assert.equal(b.status, 'lost');
+  assert.match(b.log.join(' '), /Home field/);
+});
+test('Seeded saves resume exactly across a side switch and later random draws', () => {
+  const a = battle();
+  recordOut(a);
+  recordOut(a);
+  recordOut(a);
+  const b = JSON.parse(JSON.stringify(a));
+  advanceHalf(a);
+  advanceHalf(b);
+  endTurn(a);
+  endTurn(b);
+  assert.deepEqual(a, b);
+});
+
+test('Sacrifice advances resolve with the out, and cannot score on the third out', () => {
+  const a = battle();
+  a.bases = [false, false, true];
+  playCard(a, hold(a, 'sacrifice'));
+  assert.equal(a.score.player, 0);
+  endTurn(a);
+  assert.equal(a.score.player, 1);
+  assert.equal(a.outs, 1);
+  const b = battle();
+  b.outs = 2;
+  b.bases = [false, false, true];
+  playCard(b, hold(b, 'sacrifice'));
+  endTurn(b);
+  assert.equal(b.score.player, 0);
+  assert.equal(b.status, 'switch');
+});
+test('Defensive reductions are consumed only when applied; preview is read-only', () => {
+  const b = battle('speed');
+  b.side = 'defense';
+  b.intent.strength = 7;
+  b.pitch = 5;
+  const before = JSON.stringify(b);
+  assert.equal(previewAtBat(b).bases, 1);
+  assert.equal(JSON.stringify(b), before);
+  endTurn(b);
+  assert.equal(b.speedUsed, false);
+  b.intent.strength = 8;
+  b.pitch = 5;
+  b.relics = ['glove'];
+  assert.equal(previewAtBat(b).bases, 0);
+  endTurn(b);
+  assert.equal(b.speedUsed, true);
+  assert.equal(b.gloveUsed, true);
+});
+test('A walk-off single stops before the Speedster can score an extra runner', () => {
+  const b = battle('speed');
+  b.home = true;
+  b.inning = 3;
+  b.half = 1;
+  b.side = 'offense';
+  b.lines = [
+    { player: 0, enemy: 0 },
+    { player: 0, enemy: 0 },
+    { player: 0, enemy: 0 },
+  ];
+  b.bases = [false, true, true];
+  b.contact = b.intent.strength;
+  endTurn(b);
+  assert.equal(b.status, 'won');
+  assert.equal(b.score.player, 1);
+});
+test('Forced outcomes use the same displayed Contact margin in a showdown', () => {
+  const b = battle();
+  b.contact = 5;
+  b.intent.strength = 8;
+  b.forced = 'walk';
+  assert.equal(previewAtBat(b).margin, -3);
+  b.side = 'defense';
+  b.pitch = 6;
+  assert.equal(previewAtBat(b).margin, 2);
 });
